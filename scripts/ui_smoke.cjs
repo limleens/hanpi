@@ -67,6 +67,8 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
 
     await page.locator('input[type=file][accept="image/*"]').setInputFiles(path.join(artifacts, 'ocr.png'));
     await button('Recognize characters').click();
+    await button('Use verified text').waitFor();
+    await button('Use verified text').click();
     await button('Listen to phrase').waitFor();
     await page.waitForFunction(() => document.querySelectorAll('#character-choices label').length === 5);
     assert.match(await page.locator('#meaning textarea').inputValue(), /coffee/);
@@ -114,9 +116,11 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     const search = page.getByRole('textbox', {name:'Search Chinese or English', exact:true});
     await search.fill('coffee'); await search.press('Enter');
     await button('Translate English online').waitFor();
-    await page.locator('#notice').getByRole('status').filter({hasText:'explicitly translate'}).waitFor();
-    assert.equal(await page.locator('#character-choices label').count(), 60);
-    console.log('PASS English search requires explicit online action; current phrase preserved');
+    await page.locator('#lookup-results').waitFor();
+    assert.match(await page.locator('#lookup-tone-1 label').first().innerText(),/咖啡/);
+    await page.locator('#lookup-tone-1 label').first().click();
+    await button('Listen to phrase').waitFor();
+    console.log('PASS English search uses offline candidates; online translation remains opt-in');
 
     await search.fill('骂'); await search.press('Enter');
     await page.waitForFunction(() => document.querySelectorAll('#character-choices label').length === 1);

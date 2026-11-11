@@ -43,9 +43,10 @@ def test_unknown_is_not_hallucinated(monkeypatch):
 def test_lookup_never_automatically_calls_translation():
     assert gloss.lookup_meaning("你好").source == "curated"
 
-def test_live_dictionary_if_installed():
-    import pytest
-    pytest.importorskip("pycccedict")
+def test_required_live_dictionary():
+    import pycccedict.cccedict
+    from hanpi_core.dictionary import dictionary_status
+    assert dictionary_status().ready
     gloss._entry.cache_clear()
     gloss._cedict.cache_clear()
     m = gloss.lookup_meaning("咖啡")

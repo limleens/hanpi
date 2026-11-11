@@ -16,7 +16,8 @@ Take or paste an image of Chinese writing, extract the Hanzi with local OCR, rea
 | Online translation | deep-translator, opt-in button | Implemented; depends on external service |
 | Browser Mandarin reference speech | Web Speech API | Implemented; voice quality varies by browser/device |
 | Microphone → pitch contour → tone feedback | Praat via Parselmouth | Experimental **one syllable at a time**, not a validated score |
-| Optional transcription | Faster-Whisper | Additional install; NOT used to grade tone |
+| Mandarin sentence transcription | Local sherpa-onnx Mandarin model; optional Faster-Whisper backend | One-time model preparation; text comparison, NOT tone grading |
+| English → Chinese and pinyin lookup | Offline CC-CEDICT reverse/pinyin indexes | eat → 吃; ma / ma3 / mǎ candidates grouped by written tone |
 | Starred words/sentences | SQLite persisted locally | Implemented |
 
 **Important:** Hanpi does not accurately grade whole spoken paragraphs or detect consonant/vowel mistakes yet. Mandarin sounds are context-dependent and no automatic tone score should be treated as definitive.
@@ -31,6 +32,8 @@ cd hanpi
 py -3.11 -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
+python scripts/check_environment.py --strict
+python scripts/prepare_asr.py
 python app.py
 ```
 
@@ -40,6 +43,8 @@ On macOS/Linux:
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+python scripts/check_environment.py --strict
+python scripts/prepare_asr.py
 python app.py
 ```
 
@@ -47,18 +52,28 @@ Open http://127.0.0.1:7860 in the browser. The UI uses Gradio 6; no Node build o
 
 ## Scan → Results → Spotlight → Practice
 
-- **Scan**: upload, paste, drop an image, or select the rear-camera source. Tap **Recognize characters** to open Results. Use **Edit text & translate** to correct the OCR and **Update phrase** to apply it.
-- **Type**: enter Chinese and tap **Learn this phrase**, or use the search bar. English search offers an explicit **Translate English online** action; typing/searching alone sends no translation request.
+- **Scan**: upload, paste, drop an image, or select the rear-camera source. Tap **Recognize characters**, inspect/edit **Verify detected Chinese before learning**, then tap **Use verified text**. Recognition is a proposal, not a guarantee. Small crops are upscaled and contrast/red-text variants are tried. Original Traditional characters are preserved. Results can still be edited afterward.
+- **Type**: enter Chinese and tap **Learn this phrase**. The search bar has **Chinese → English**, **English → Chinese**, and **Pinyin lookup** modes. English `eat` returns selectable 吃 · chī offline. `ma` shows all written tones; `ma3` and `mǎ` select tone 3. **More matches** pages through remaining candidates. Unmarked/multi-syllable pinyin is not forced to one arbitrary reading. Online translation is an explicit optional enhancement; failures retain offline matches.
 - **Results**: explore aligned, tone-coloured Hanzi/pinyin, an editable meaning and key vocabulary. Offline meanings are clearly labelled dictionary definitions or approximate word glosses. Fluent online translation is opt-in under **Edit text & translate**.
 - **Spotlight**: tap a character or its pinyin (keyboard selection also works). Other characters dim. **Listen** uses natural Mandarin by default and falls back to browser speech if the service fails. Sandhi examples retain phrase context.
 - **Try it**: record/upload one isolated syllable, then **Check my tone**. Retry, advance to the next character, or return to the phrase. The pitch chart stays inside **Pitch detail**.
-- **Try the whole phrase**: record and play your own attempt back. Optional transcription can show recognised text; it does not grade sentence tones. Finish with **Save phrase**, **Practice again**, or **Done**.
-- **Speak**: optional Whisper transcription produces editable Chinese that opens the same Results view. Without Whisper, use Type or Scan. Install `requirements-asr.txt` and allow the initial model download to enable it.
+- **Try the whole phrase**: listen to the target, record, then **Review recording** to transcribe locally. Expected text and **I heard** appear together. Possible substitutions/omissions are highlighted; tap a flagged target character to open Spotlight. Edit an incorrect transcript and **Compare corrected transcript**. Punctuation and Simplified/Traditional forms are ignored only for alignment; original text is retained. ASR can mishear: text differences are not detected tone/consonant errors. Finish with **Save phrase**, **Practice again**, or **Done**.
+- **Speak**: the same local Mandarin model produces editable Chinese that opens Results. Prepare it once with `python scripts/prepare_asr.py` or **Prepare Mandarin speech model (~75 MB)** in Settings/whole-phrase practice. After preparation, recognition needs no network, GPU or paid API. If unavailable, playback and manual Spotlight remain usable with an actionable error.
 - **Saved**: reopen a saved item for practice or remove its star. You can also keep a word or a selected character.
 
-**Settings** groups Female/Male neural voices, 0.75×/1×/1.25× speed, browser-voice preference, and optional practice transcription. Settings persist while navigating within the current session. Nothing generates online speech before you tap Listen.
+**Settings** groups Female/Male neural voices, 0.75×/1×/1.25× speed, browser-voice preference, and optional practice transcription. Settings persist while navigating within the current session. The transcription checkbox only controls the optional isolated-syllable transcript; whole-sentence Review always attempts ASR. Nothing generates online speech before you tap Listen.
 
 The bottom navigation stays accessible on phones; desktop uses the same calm, centred layout. Animations respect reduced-motion preferences.
+
+## Dictionary and speech setup diagnostics
+
+Use the **same Python interpreter** for installation, checks and `app.py`. At startup Hanpi prints that executable and CC-CEDICT status. `scripts/check_environment.py --strict` checks required packages and verifies real dictionary segmentation of 我 / 喜欢 / 咖啡. Add `--asr` after preparing the model to verify the actual speech engine.
+
+CC-CEDICT 1.2.0 bundles its dataset, but its upstream loader omits UTF-8 encoding. Hanpi now explicitly reads it as UTF-8, fixing CP1252/ASCII-locale decoding failures. Initialization errors are logged with their actual cause and shown in Settings; a limited starter dictionary remains available instead of pretending the full dataset loaded.
+
+The default speech engine is a compact **14M-parameter Mandarin Zipformer via sherpa-onnx**, downloaded from its official GitHub release (about 75 MB) with a pinned SHA-256 check. It runs on CPU and never receives the target sentence as a prompt. Model files stay in the user cache (`HANPI_ASR_CACHE` overrides it). The model/release is Apache-2.0; see [source and model](https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models).
+
+Faster-Whisper remains an alternative: install `requirements-asr.txt`, set `HANPI_ASR_BACKEND=faster-whisper`, then run `python scripts/prepare_asr.py --model base`. That path needs Hugging Face access for its one-time download; the default Mandarin model does not. No ASR text comparison is a pronunciation score.
 
 ## Try something other than 你好
 
@@ -97,6 +112,7 @@ Automated tests cover dictionary logic, tone rules, SQLite memory, synthetic pit
 - **pycccedict**: CC-CEDICT Mandarin-English vocabulary.
 - **Parselmouth/Praat**: acoustic pitch extraction and shape-based tone coaching.
 - **deep-translator**: optional, explicit online translation.
+- **sherpa-onnx / Mandarin Zipformer**: local CPU sentence transcription; **OpenCC** normalizes script variants only for comparison. Faster-Whisper remains optional.
 - **Gradio**: mobile-first shared Results/Spotlight UI, accessible character controls and microphone capture.
 - **SQLite**: persistent private starred library.
 

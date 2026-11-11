@@ -10,7 +10,9 @@
 - **deep-translator:** optional online translation when explicitly clicked; sends selected Chinese text to an external provider. Not part of the offline default flow.
 - **Praat/Parselmouth:** signal-processing pitch measurement (F0); we wrote a simple contour heuristic which can abstain. This is not a trained Mandarin tone model and should not be presented as one.
 - **SpeechSynthesis:** browser/platform TTS for pronunciation examples.
-- **Faster-Whisper:** optional local text transcript; downloads a model only when installed/used. ASR text is NOT the measured spoken tone.
+- **sherpa-onnx / Mandarin Zipformer:** default local Mandarin sentence transcription using a compact Apache-2.0 model from the official sherpa-onnx GitHub release. An explicit one-time download (~75 MB) is SHA-256 checked; recordings stay local.
+- **Faster-Whisper:** optional alternative transcription backend with an explicit model preparation step. Neither backend measures lexical tone accuracy.
+- **OpenCC + difflib:** Simplified/Traditional normalization for text comparison and character edit alignment; this is not acoustic forced alignment or phoneme detection.
 
 ## Development tools
 
@@ -32,6 +34,15 @@ Temporary remote access uses a password-protected Gradio HTTPS share link. This 
 
 ## v1 mobile redesign
 
-The interface now uses a shared Results view for OCR, typed/search text, optional speech input and saved items. Native Gradio character/pinyin controls open Spotlight practice. Natural speech is the default only after an explicit Listen action; browser fallback remains available in Settings. English search also requires an explicit online translation action. No phoneme detector or whole-sentence tone scorer was introduced.
+The interface now uses a shared Results view for OCR, typed/search text, optional speech input and saved items. Native Gradio character/pinyin controls open Spotlight practice. Natural speech is the default only after an explicit Listen action; browser fallback remains available in Settings. English common-word lookup and pinyin candidates now use offline CC-CEDICT indexes; online translation remains explicitly opt-in. No phoneme detector or whole-sentence tone scorer was introduced.
 
 Regression checks cover source/meaning state, sandhi speech context, voice-service failures, optional ASR absence and saved practice counters. Browser QA uses generated Chinese text images and synthetic pitch audio. A browser speech callback check verifies wiring, not audible speech quality. Real recordings, native-speaker judgement, iPhone HTTPS camera/mic behavior and production hosting remain unverified. See docs/REDESIGN_QA.md.
+
+
+## Release reliability fixes
+
+The dictionary loader now explicitly decodes UTF-8 instead of hiding an upstream locale-dependent UnicodeDecodeError. Tests use the installed 122,143-entry dataset, including a real CP1252 failure reproduction and a fresh Linux install with UTF-8 mode disabled. This simulates the decoding issue, not a Windows hardware test.
+
+Sentence practice transcribes real audio locally and compares the resulting text with the target. Highlighted words are **possible text differences**: the learner can correct ASR mistakes and open a flagged target character in Spotlight. A matching transcript does not prove correct pronunciation. No numeric pronunciation grade, per-syllable tone diagnosis or consonant-error detector was added.
+
+Actual model validation used three public human Mandarin WAV files from the official model release, plus browser upload/transcription/comparison with matching and mismatching target sentences. This is functional integration evidence, not a measured ASR accuracy study or a test of the user's microphone. The small-red and clean OCR PNGs committed under tests/fixtures are generated fixtures; they are explicitly not the user's inline menu images. Exact-image benchmarking remains pending access to the original file. Phone camera/microphone and audible device TTS remain manual checks.

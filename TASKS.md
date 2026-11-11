@@ -67,3 +67,21 @@
 - [ ] Complete native-speaker feedback, submission write-up and a short demo before the authoritative portal deadline.
 
 See `docs/REDESIGN_QA.md` for exact automated results and browser evidence. The app remains a single-user, shared SQLite prototype; no permanent hosting or per-user cloud sync is claimed.
+
+
+## Release reliability pass · 11 November 2026
+
+- [x] Reproduced English-only search failure and the real upstream dictionary UnicodeDecodeError with CP1252 decoding; no silent initialization failure.
+- [x] Explicit Chinese → English / English → Chinese / Pinyin modes; offline reverse lookup, tone groups, numbered/accented input, pagination and selectable lessons.
+- [x] Real bundled CC-CEDICT loads as UTF-8; diagnostic command verifies app interpreter/packages and 我 / 喜欢 / 咖啡 segmentation. Limited fallback vocabulary is clearly labelled.
+- [x] Bounded OCR upscale/contrast/sharpen/red-channel variants with model-score ranking; preserve Traditional output and require editable confirmation before lesson creation.
+- [ ] Run OCR on the original user menu image: inline chat images are visible but no source file is exposed to Python. Generated 149×28 red Traditional and clean fixtures pass actual RapidOCR.
+- [x] Default local Mandarin ASR with an explicit, checksum-verified ~75 MB model download; no paid API or Hugging Face dependency for the default path.
+- [x] Whole-sentence expected/transcript comparison, possible word omissions/substitutions, editable transcript and highlighted-target Spotlight. No sentence tone/phoneme grading.
+- [x] Real public Mandarin recordings transcribed; browser integration checks matching and mismatching targets. Isolated-syllable F0 coach remains independent.
+- [x] Fresh Python 3.11 dependency install and non-UTF-8-locale dictionary check; full regression suite and both browser walkthroughs pass.
+- [x] Local authentication smoke test: unauthenticated config is HTTP 401, valid login succeeds. No secrets committed.
+- [ ] Actual Windows/iPhone hardware: authenticated HTTPS, rear camera, microphone, audible Mandarin speech. Follow the five-minute PHONE_DEMO check.
+- [ ] User review of PR #2; do not merge automatically.
+
+See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and the existing navigation are preserved; this pass changes functionality, not visual design.

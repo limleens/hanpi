@@ -17,3 +17,7 @@ deep-translator>=1.11,<2.0
 
 # Optional: browser-independent online Mandarin neural reference voices.
 edge-tts>=7.0,<9.0
+
+# Local Mandarin sentence transcription and script-variant comparison.
+sherpa-onnx>=1.12,<2.0
+opencc-python-reimplemented>=0.1.7,<1.0

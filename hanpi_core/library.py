@@ -56,7 +56,7 @@ def _entry(row: sqlite3.Row | None) -> SavedEntry | None:
     return SavedEntry(**dict(row)) if row else None
 
 
-def save_entry(kind: str, hanzi: str, meaning: str, *, db_path: str | Path | None = None) -> SavedEntry:
+def save_entry(kind: str, hanzi: str, meaning: str, *, db_path: str | Path | None = None, reading: str | None = None) -> SavedEntry:
     """Create/update a starred item; re-starring it never loses practice history."""
     if kind not in {"word", "sentence"}:
         raise ValueError("Save either a word or a sentence.")
@@ -69,7 +69,7 @@ def save_entry(kind: str, hanzi: str, meaning: str, *, db_path: str | Path | Non
         raise ValueError("Add an English meaning before starring this item.")
     if len(meaning) > 240:
         raise ValueError("Keep the English meaning under 240 characters.")
-    syllables = get_syllables(clean)
+    syllables = get_syllables(clean, reading)
     written = " ".join(s.written_pinyin for s in syllables)
     spoken = " ".join(s.spoken_pinyin for s in syllables)
     with _db(db_path) as db:

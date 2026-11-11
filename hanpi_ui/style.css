@@ -591,3 +591,8 @@ footer { display: none !important; }
     scroll-behavior: auto !important;
   }
 }
+/* Functional word-comparison states; these do not represent measured tone errors. */
+.sentence-comparison { padding:16px; border:2px solid var(--line, #e5d8bf); border-radius:18px; }
+.sentence-comparison p[lang] { font-size:24px; line-height:1.8; }
+.sentence-comparison .word-difference { color:#713c13; background:#ffe2a6; padding:2px; border-radius:5px; }
+#word-differences label { background:#fff0ce; border-color:#bb8036; }

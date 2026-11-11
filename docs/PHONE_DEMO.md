@@ -21,7 +21,7 @@ The running Gradio server should print a temporary **https://...gradio.live** UR
 - Open the HTTPS link in iPhone Safari.
 - Sign in, then use the **Camera** source on the photo card to take a picture of Hanzi. Alternatively choose Upload to select a photo from your library.
 - Allow camera/microphone permissions in Safari when prompted.
-- Tap **Recognize characters** to open Results. Review/correct the detected text under **Edit text & translate**, then tap **Update phrase**.
+- Tap **Recognize characters**, verify/edit the proposed Chinese text, and tap **Use verified text** to open Results.
 - Tap a character/pinyin to open Spotlight, then **Listen** and **Try it**. Record an isolated syllable and tap **Check my tone**. Settings selects Female/Male natural voice, speed, or browser speech; network failure falls back to browser speech where available.
 
 **Important:** Browser camera/microphone access requires a secure HTTPS origin outside localhost. Browser/speech behavior may vary across iOS versions.
@@ -54,3 +54,29 @@ For an eventual permanent hosted Gradio app, a [Hugging Face Space](https://hugg
 - [ ] Natural voice selector generates and plays audio when connected.
 - [ ] Star a word, restart Windows app, and verify the entry remains saved.
 - [ ] No public exposure of shared vocabulary or passwords.
+
+
+## Five-minute release check on your real iPhone
+
+Prepare dependencies/model on the computer before this check:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/check_environment.py --strict
+.\.venv\Scripts\python.exe scripts/prepare_asr.py
+.\.venv\Scripts\python.exe scripts/check_environment.py --strict --asr
+$env:HANPI_SHARE = "1"
+$env:HANPI_DEMO_USER = "hanpi-demo"
+$privatePassword = Read-Host "Private demo password (at least 10 characters)" -AsSecureString
+$env:HANPI_DEMO_PASSWORD = [System.Net.NetworkCredential]::new("", $privatePassword).Password
+.\.venv\Scripts\python.exe app.py
+```
+
+The share link is temporary and depends on Gradio's external tunnel service. Keep the computer running; do not post the password or link publicly. The password prompt above avoids putting its value into shell history.
+
+1. Open the printed HTTPS share link in Safari; confirm login is required and sign in.
+2. Select **English → Chinese**, search `eat`, choose 吃. Select **Pinyin lookup**, search `ma3`, then `mǎ`; verify the third-tone choices.
+3. Scan your actual menu using the rear-camera control, allow permission, and verify/edit the proposed characters **before** pressing Use verified text. Try the original narrow red crop too.
+4. Type 我喜欢咖啡. Tap Listen, then Try the whole phrase; record once correctly and once with a different word. Review recording, inspect/edit “I heard”, and tap a flagged target character. Text differences can be ASR mistakes; they are not measured tone errors. For isolated tone coaching, record only the selected syllable.
+5. Test playback, save/reopen a phrase, and navigate all four tabs without sideways scrolling. If neural TTS is unavailable, choose Browser voice in Settings and check whether the device has a Mandarin voice.
+
+This checklist is **not marked passed** by the automated desktop runs. Real camera/mic permissions, audible playback and Safari behavior require your phone. Avoid personal vocabulary in a shared demo; everyone authenticated to that instance uses the same host-local SQLite library.

@@ -12,8 +12,8 @@ PALETTE = {
 }
 
 
-def character_choices(text):
-    return [(f'{s.hanzi}\n{s.spoken_pinyin}', f'{s.index}:{s.expected_tone}') for s in get_syllables(text)]
+def character_choices(text, reading=None):
+    return [(f'{s.hanzi}\n{s.spoken_pinyin}', f'{s.index}:{s.expected_tone}') for s in get_syllables(text, reading)]
 
 
 def character_styles():
@@ -26,8 +26,8 @@ def character_styles():
     )
 
 
-def spotlight(text, index):
-    syllables = get_syllables(text)
+def spotlight(text, index, reading=None):
+    syllables = get_syllables(text, reading)
     if not syllables:
         return '', ''
     try:

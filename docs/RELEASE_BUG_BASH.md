@@ -89,3 +89,10 @@ Read `AGENTS.md`, `docs/V1_PRODUCT_SPEC.md`, `docs/VISUAL_DESIGN.md`, `README.md
 ## Scope discipline
 
 No more visual redesign, mascot work, unrelated feature expansion, Next.js migration, user accounts, cloud sync or Docker work tonight. Use the existing playful styling and consistent shared Results view. A smaller app that handles genuine inputs reliably is a better engineering submission than a wider app containing dead or misleading controls.
+
+
+## Implementation/verification update
+
+Offline English/pinyin search, explicit UTF-8 dictionary loading and interpreter diagnostics, editable OCR confirmation/preprocessing, and local sentence ASR/text comparison are implemented. See `REDESIGN_QA.md` for the current 82-test and browser evidence, the concrete CP1252 root cause, public real-speech model tests, and exact commands. Existing style is preserved. PR #2 receives changes via this same feature branch; no merge is authorized.
+
+The **original menu-image acceptance test remains open** because the inline chat images are not exposed as files to the execution tools. Generated small red/Traditional fixtures pass the actual OCR model and are clearly labelled as generated; they are not substitutes for claiming an exact-image pass. Actual Windows/iPhone hardware and public HTTPS sharing also remain manual checks.

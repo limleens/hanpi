@@ -1,4 +1,61 @@
-# Hanpi v1 redesign · QA evidence
+# Release reliability validation · 11 November 2026
+
+This pass preserves the approved bubbly design and fixes lookup, dependency initialization, OCR review and sentence practice. The older redesign report below is historical.
+
+- Baseline before this pass: **47 tests passed**.
+- Current full suite: **82 passed, 0 failed, 0 skipped**, including the real bundled dictionary and packaged OCR models.
+- A **fresh Python 3.11 venv** installed the main requirements and loaded 122,143 dictionary entries with UTF-8 mode disabled in an ASCII locale. The CP1252 failure in upstream pycccedict was reproduced against its real dataset; the explicit UTF-8 loader passes. This is not a real Windows OS/hardware test.
+- `scripts/check_environment.py --strict --asr` passed in that same fresh interpreter, with the default Mandarin speech engine ready and optional Faster-Whisper absent.
+- The release browser walkthrough passed at **390×844 and 1280×900**: offline `eat`, all-tone `ma`, numbered/accented lookup, selectable lessons, real online-provider denial with usable offline fallback, three-word phrase segmentation, editable OCR confirmation, real recorded Mandarin transcription, matching/mismatching target comparison and highlighted-character Spotlight. No page errors or horizontal overflow were observed.
+- The existing browser walkthrough also passed: isolated-syllable synthetic tone feedback, retry/next/back, 60-character input, saved vocabulary/counter/reopen/remove, browser speech text/rate wiring and keyboard selection.
+- Local authenticated startup passed: unauthenticated `/config` returned **401**, and valid login returned **200**. Test credentials were generated only in memory. This checks HTTP authentication, not a public HTTPS tunnel or actual iPhone.
+
+## What was actually exercised
+
+**Dictionary/search:** full installed CC-CEDICT, offline English reverse index, tone-aware pinyin index, paging and alternative readings retained into Spotlight and saved entries. Common starter vocabulary remains usable if full loading fails; the actual failure is logged and a repair/interpreter diagnostic is visible. Online-success logic is mocked in unit tests; the cloud browser exercised a real provider failure and fallback, not live fluent translation success.
+
+**OCR:** actual RapidOCR ran on the committed generated 149×28 dark-red Traditional crop and large clean image. Both returned their complete expected text. The small fixture is deliberately similar in size/colour, but is **not the user's original image**. The original tiny crop and full menu were embedded inline in chat without a file path/download ID available to Python; exact-image benchmarking remains open. All recognized text must now be verified/edited before a lesson opens. Low-score readings are rejected; competing candidates remain selectable. No OCR text is hardcoded into the application.
+
+**ASR:** installed sherpa-onnx 1.13.8 and the official compact 14M Mandarin Zipformer, downloaded from the [official release](https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models). The 75 MB archive is pinned to SHA-256 `2cbd71b640d9c37d3784f29367333a4577b0398b62e9deeed418170b081cba8b`. Its Apache-2.0 release README supplies licensing. Public human Mandarin files `test_wavs/0.wav`, `1.wav`, and `8k.wav` were transcribed on CPU (about 0.15–0.84 seconds after/preparing the local engine in this environment). This is functional evidence, not an independent ASR accuracy study. The first public recording was uploaded through the browser recording control and compared both with a matching target and a target using 说明 instead of the recording's 介绍; flagged target characters opened Spotlight. These are real model calls, not mocked transcripts. The user's voice/microphone was not available.
+
+**Truthful feedback:** punctuation and Simplified/Traditional variants are normalized only for text alignment. ASR mistakes are possible and the transcript is editable. A matching transcript explicitly does **not** verify pronunciation or tone. No per-word tone grade, consonant diagnosis or percentage score was introduced. The isolated-syllable F0 coach remains separate.
+
+## Reproduce
+
+```bash
+python -m pip install -r requirements.txt pytest
+python scripts/check_environment.py --strict
+python scripts/prepare_asr.py
+python scripts/check_environment.py --strict --asr
+python -m pytest -q
+```
+
+Run the app with an isolated `HANPI_LIBRARY_PATH` for browser writes. The default local app needs no JavaScript build. For browser automation use the supplied Playwright/Chromium tooling:
+
+```bash
+HANPI_LIBRARY_PATH=/tmp/hanpi-release.sqlite3 python app.py
+# In another terminal, provide the public release sample or another real Mandarin WAV.
+HANPI_UI_URL=http://127.0.0.1:7860/ HANPI_SPEECH_SAMPLE=/path/to/real-mandarin.wav node scripts/release_smoke.cjs
+node scripts/ui_smoke.cjs
+```
+
+`release_smoke.cjs` uses the official release's `test_wavs/0.wav` with the reference “对我做了介绍那么我想说的是大家如果对我的研究感兴趣呢”. A different WAV requires adapting that reference; do not call arbitrary speech a passed reference test. The existing smoke script generates its own image/synthetic pitch fixture. Both scripts require Playwright and Chromium; `HANPI_CHROMIUM` overrides the executable path. Screenshots are written to `HANPI_SCREENSHOT_DIR`.
+
+## Current functional screenshots
+
+<img src="images/release-pinyin.png" alt="Offline pinyin candidates grouped by written tone" width="320">
+<img src="images/release-sentence-comparison.png" alt="Real Mandarin ASR transcript compared to a different target, with possible word mismatches" width="320">
+
+## Remaining checks
+
+- Original user menu image: add the actual file to the branch or supply a download URL, then benchmark the exact pixels and record output/candidates.
+- Actual Windows environment and iPhone Safari camera/microphone, audible Mandarin TTS, and authenticated HTTPS sharing: use the five-minute checklist in PHONE_DEMO.md. Desktop viewport emulation is not a hardware pass.
+- Live neural speech provider quality and optional Faster-Whisper model download remain unverified here. The default local Mandarin model does not require Hugging Face or a paid API.
+- Native-speaker evaluation and submission demo. No permanent hosting or per-user cloud storage is claimed.
+
+## Historical redesign QA
+
+# Original Hanpi v1 redesign · historical QA
 
 Validated locally on 11 November 2026 with Python 3.11.17, Gradio 6.31.0 and headless Chromium. The existing Python/Gradio stack, local OCR, dictionary, SQLite library and experimental pitch classifier are retained. No phoneme detector or whole-sentence tone grader was added.
 

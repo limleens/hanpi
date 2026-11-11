@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from .text import clean_hanzi
+from .dictionary import get_dictionary, dictionary_status
+from .starter import BY_WORD
 
 GLOSSES = {
     "你好": "Hello", "你": "You", "好": "Good; well",
@@ -26,19 +28,15 @@ class Meaning:
 
 @lru_cache(maxsize=1)
 def _cedict():
-    try:
-        from pycccedict.cccedict import CcCedict
-        return CcCedict()
-    except (ImportError, OSError, ValueError):
-        return None
+    return get_dictionary()
 
 @lru_cache(maxsize=4096)
 def _entry(word: str):
     dictionary = _cedict()
     if dictionary is None:
-        return None
+        return BY_WORD.get(word)
     try:
-        return dictionary.get_entry(word)
+        return dictionary.get_entry(word) or BY_WORD.get(word)
     except (KeyError, ValueError, TypeError):
         return None
 
@@ -61,11 +59,9 @@ def lookup_meaning(text: str) -> Meaning:
         return Meaning("", "none", False, "Enter Chinese text to see its meaning.")
     direct = _exact(hanzi)
     if direct:
-        origin = "curated" if hanzi in GLOSSES else "CC-CEDICT"
+        origin = "curated" if hanzi in GLOSSES else ("CC-CEDICT" if _cedict() is not None else "starter dictionary (limited)")
         return Meaning(direct, origin, True, "Dictionary meaning; verify readings in context.")
-    if _cedict() is None:
-        return Meaning("", "unavailable", False,
-                       "Install the requirements to enable the offline CC-CEDICT dictionary.")
+    limited = _cedict() is None
     parts, unknown = [], []
     pos = 0
     while pos < len(hanzi):
@@ -87,7 +83,9 @@ def lookup_meaning(text: str) -> Meaning:
     note = "Approximate word-by-word dictionary gloss, not a fluent sentence translation."
     if unknown:
         note += " Unknown characters: " + "".join(unknown[:40]) + ("…" if len(unknown) > 40 else "")
-    return Meaning(" · ".join(parts), "CC-CEDICT segmented gloss", False, note)
+    if limited:
+        note += " " + dictionary_status().message
+    return Meaning(" · ".join(parts), "starter dictionary (limited)" if limited else "CC-CEDICT segmented gloss", False, note)
 
 def meaning_for(text: str) -> str:
     return lookup_meaning(text).text
