@@ -83,3 +83,10 @@ This checklist is **not marked passed** by the automated desktop runs. Real came
 
 
 After pulling the final phone fix, stop the old process with Ctrl+C and run app.py again in the same PowerShell window. Use the **new** printed HTTPS link. Sharing/login environment variables and the prepared speech model remain available. The learning flow now separates Results, Spotlight, recording and feedback; the top Back button moves one stage back. Your phone’s browser chrome may remain dark; the app’s cards and text use a consistent light palette.
+
+
+## Demo sign-in
+
+Visitors enter the same `HANPI_DEMO_USER` and `HANPI_DEMO_PASSWORD` you set on the hosting computer. They do not create an account. Give challenge reviewers these details with the private submission/demo instructions. The browser normally stays signed in after refreshing; a new browser or private window needs the login again. The landing page never displays or embeds the credentials.
+
+Sign-in uses Hanpi's cream/navy/orange card styling, Fredoka headings and Plus Jakarta Sans controls. Both fonts are bundled, including before login, so Google Fonts access is unnecessary. Authentication and the shared-library behavior are unchanged.

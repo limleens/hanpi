@@ -145,3 +145,8 @@ The app uses one readable light palette even when the phone requests dark mode. 
 Full English translation appears directly in Results. For example, 蒜香爆燒肉 → “Stir-fried roast pork with garlic.” Common phrases/menu items work offline; other sentences try bounded online providers, then clearly label any word-gloss fallback. This does not imply an offline translation model for arbitrary sentences.
 
 Tone coaching accepts quieter/shorter recordings and a broader pitch range, fixes stereo PCM normalization, and uses encouraging feedback. Sound-alike ASR spellings are advisory, not definite word errors. These changes do not establish human pronunciation accuracy or turn uncertain audio into a successful grade.
+
+
+## Demo welcome screen
+
+The shared HTTPS link opens a Hanpi-branded sign-in card. Visitors use your configured demo username/password, then continue into Scan; no account registration is needed. The two brand fonts are bundled under their SIL Open Font licences for reliable styling before and after login. See [phone setup](docs/PHONE_DEMO.md) for credentials and sharing.

@@ -109,3 +109,13 @@ See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and t
 - [x] Real human single-word and sentence ASR exercised in a dark-OS phone-width browser; exact-match Continue, replacement breakdown and nested Back verified.
 - [ ] Recheck the final voice feedback with the user's physical phone microphone; arbitrary-word ASR accuracy and full-sentence tone grading remain unvalidated/unsupported.
 - [x] Final validation: 104 pytest cases; same-interpreter strict dictionary/ASR check; current server startup; real-recording phone browser and OCR/Saved/desktop walkthroughs.
+
+
+## Demo welcome screen · 11 November
+
+- [x] Match the protected sign-in page to Hanpi's cream/orange/navy cards and Fredoka/Plus Jakarta Sans typography.
+- [x] Bundle the brand fonts with their SIL Open Font licences; no external font request needed before login.
+- [x] Preserve configured username/password authentication and never expose credentials in landing HTML.
+- [x] Real authenticated browser checks at 320/390/1280px, light/dark appearance, wrong-password rejection, protected config, successful login and refresh persistence.
+- [x] Full Python suite: 105 tests passed; existing remote-auth guard remains tested.
+- [ ] Confirm final sign-in appearance on the physical phone; browser checks use desktop Chromium with phone-sized viewports.

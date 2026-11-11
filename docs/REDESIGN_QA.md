@@ -1,3 +1,12 @@
+# Branded sign-in validation · 11 November
+
+- Baseline before this change: 104 tests passed. Updated full suite: **105 tests passed**.
+- `node scripts/auth_smoke.cjs` starts an actual local Gradio server with random in-memory QA credentials, then tests 320×640 and 390×844 dark preference plus 1280×900 light preference. Credentials are neither logged nor committed.
+- Verified cream background, orange action, both **actually loaded** bundled brand fonts, and no horizontal overflow. Screenshots: `login-320-dark.png`, `login-390-dark.png`, `login-1280-light.png` in the local auth-final artifacts.
+- Anonymous `/config` remains 401; an incorrect password is rejected; valid credentials enter the real Scan UI and `/config` returns 200. Refresh retains the authenticated session. The auth card is removed after sign-in.
+- The main-app OCR, Spotlight, retry/Continue, Saved persistence, keyboard selection and desktop browser walkthrough also passed after bundling the shared fonts.
+- Uses Gradio's existing login flow with a custom HTML welcome message; no replacement authentication, account system, external font dependency or password in the UI. This is browser evidence, not a new physical iPhone test.
+
 # Voice feedback release check · 11 November, 23:20 UTC
 
 - Baseline: **92 tests passed** before this change. **104 tests passed**. The new suite adds word transcription, separate measured pitch, matched/mismatched/unavailable speech recognition, and aligned per-word breakdown regressions.

@@ -23,8 +23,10 @@ from hanpi_core.text import clean_hanzi, get_syllables
 from hanpi_core.tones import PRACTICE_TIPS, TONES, analyze_tone
 from hanpi_core.voice import synthesize_neural, DEFAULT_VOICE
 from hanpi_ui.presentation import character_choices, character_styles, spotlight, vocabulary_view
+from hanpi_ui.branding import FONT_CSS
 
-CSS = (Path(__file__).parent / 'hanpi_ui' / 'style.css').read_text(encoding='utf-8') + character_styles()
+CSS = FONT_CSS + (Path(__file__).parent / 'hanpi_ui' / 'style.css').read_text(encoding='utf-8') + character_styles()
+AUTH_MESSAGE = (Path(__file__).parent / 'hanpi_ui' / 'login.html').read_text(encoding='utf-8').replace('/* HANPI_FONTS */',FONT_CSS)
 
 BROWSER_SPEECH = """(text, rate, status) => {
     if (!text) return status;
@@ -704,7 +706,7 @@ def launch_app():
     print(dictionary_status().message, flush=True)
     return build_app().launch(server_name=host, server_port=int(os.environ.get('PORT','7860')), share=share,
                               auth=(username,password) if remote else None, inbrowser=not share, show_error=True,
-                              theme=make_theme(), css=CSS)
+                              auth_message=AUTH_MESSAGE, theme=make_theme(), css=CSS)
 
 
 if __name__ == '__main__':

@@ -62,3 +62,8 @@ Character practice now runs the existing local Mandarin ASR as well as the isola
 Whole-sentence comparison retains aligned target/recognized segments for Spotlight, including missing words, sound-alike spellings and unequal-length replacements. Transcript pinyin gives the dictionary reading of the spelling, not an acoustically measured lexical tone. There is still no sentence tone, phoneme or consonant detector.
 
 Validation used actual public human recordings from the official model release: a short 对 crop and a full sentence, through the browser upload controls. Matched and mismatched targets, per-word heard breakdown and nested Back navigation passed. This is functional evidence for those recordings, not an accuracy study or a real phone microphone test. UI text was shortened; no Figma or new mascot artwork was used in this final pass.
+
+
+## Branded sign-in
+
+Gradio's existing authenticated entry page now receives static Hanpi welcome markup and scoped CSS. It never contains the configured credentials. Fredoka and Plus Jakarta Sans variable font assets are bundled from Fontsource 5.3.0 packages, with original SIL Open Font licences, and embedded in CSS for both sign-in and the app. No generative image or mascot was added. Browser validation used random QA credentials, actual authentication requests, mobile/desktop viewport checks and successful session refresh; physical-phone appearance still needs manual confirmation.
