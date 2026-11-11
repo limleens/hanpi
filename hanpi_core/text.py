@@ -5,7 +5,8 @@ import re
 from dataclasses import dataclass
 
 HANZI = re.compile(r"[\u3400-\u9fff]")
-MAX_HANZI = 8
+// Storage safeguard, not a recognition limit.
+MAX_HANZI = 10000
 
 # Minimal demo mode if PyPinyin isn't installed; never silently transliterate
 # arbitrary Chinese using single-character lookup (polyphones are contextual).
@@ -33,8 +34,10 @@ class Syllable:
         label = " (sandhi)" if self.written_pinyin != self.spoken_pinyin else ""
         return f"{self.index + 1}. {self.hanzi} · {self.spoken_pinyin}{label}"
 
-def clean_hanzi(text: str, max_hanzi: int = MAX_HANZI) -> str:
-    return "".join(HANZI.findall(text or ""))[:max_hanzi]
+def clean_hanzi(text: str, max_hanzi: int | None = None) -> str:
+    """Keep all recognised Hanzi; never silently truncate OCR or input."""
+    result = "".join(HANZI.findall(text or ""))
+    return result if max_hanzi is None else result[:max_hanzi]
 
 def get_syllables(text: str) -> list[Syllable]:
     hanzi = clean_hanzi(text)
