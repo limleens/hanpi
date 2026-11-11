@@ -1,4 +1,4 @@
-"""Local OCR with RapidOCR (preferred) and Tesseract fallback."""
+"""Local OCR with RapidOCR (preferred) and Tesseract fallback. No truncation."""
 from functools import lru_cache
 from PIL import Image, ImageOps
 from .text import clean_hanzi
