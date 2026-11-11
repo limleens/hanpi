@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 
 HANZI = re.compile(r"[\u3400-\u9fff]")
-// Storage safeguard, not a recognition limit.
+# Storage safeguard, not a recognition limit.
 MAX_HANZI = 10000
 
 # Minimal demo mode if PyPinyin isn't installed; never silently transliterate
