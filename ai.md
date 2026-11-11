@@ -21,3 +21,10 @@ OpenAI ChatGPT (GPT-6) assisted with GitHub research, architecture, initial impl
 Initial tests cover only artificially generated pitch contours and text rules; a generated Hanzi image was OCR-smoke-tested with Tesseract. Human recording accuracy, real-photo OCR, and the user's Windows install remain to be tested before submission. Pitch contour ≠ complete pronunciation; low or unclear tone 3 may be unclassified. This is educational feedback, not a validated language-assessment or medical product.
 
 Default OCR, dictionary lookup and audio grading run locally; microphone recordings are not sent to an LLM. Online translation only sends text after an explicit click. Browser speech-synthesis services may depend on the host platform.
+
+
+## Natural Mandarin voice and mobile access
+
+An optional online neural voice feature uses [edge-tts](https://github.com/rany2/edge-tts), a third-party LGPLv3 Python client for Microsoft Edge's speech service. It offers Mandarin voices Xiaoxiao/Yunxi/Xiaoyi at configurable speeds, and sends the selected Chinese text online **only when the user clicks a neural speech button**. It requires an external network service and may be unavailable or subject to provider restrictions. The existing browser speech-synthesis option remains as fallback. No voice recording is sent to this TTS provider.
+
+Temporary remote access uses a password-protected Gradio HTTPS share link. This is a single-user prototype: all signed-in visitors use the same SQLite Starred library on the hosting computer, not isolated cloud accounts. See docs/PHONE_DEMO.md.
