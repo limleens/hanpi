@@ -40,3 +40,11 @@ Keep the **simple, uncluttered UI concept** agreed with the user:
 - Open a pull request for review and update `TASKS.md` and GitHub issue #1 with progress and remaining blockers.
 - If an environment has no access to camera/microphone or external audio service, say so and DO NOT mark those tests complete.
 - Do not allow UI polish to jeopardize the submission. The user is targeting **11 November 2026 at 23:59 GMT**, subject to the live Ashby portal's authoritative deadline.
+
+## Visual identity update — user feedback on 11 Nov 2026
+The user found the first redesign too generic. Do not revert to the serif/beige minimalist theme. Preserve the same simple UI structure but use a deliberate, friendly, bubbly, Duolingo-adjacent (not copied) learning-app personality:
+- Reference the user's PathPilot Figma style guide: https://www.figma.com/design/mIhSWi1AfxqrE7zMvdnftS/pathpilot?node-id=0-1
+- Headings/wordmark: Fredoka; body controls: Plus Jakarta Sans from Figma; readable Chinese font fallback. See hanpi_ui/style.css.
+- Bright orange, teal and navy accents on warm cream; short tactile buttons, rounded flashcards, original CSS Hanzi mark and small speech-bubble mascot.
+- Keep the interface airy, not cluttered: only the active task needs emphasis; avoid big gradients, random emoji piles, generic stock illustrations and fake feedback.
+- See docs/VISUAL_DESIGN.md. Review on real phone widths before merging.
