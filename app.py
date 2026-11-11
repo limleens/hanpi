@@ -15,7 +15,7 @@ from hanpi_core.ocr import recognize_image
 from hanpi_core.dictionary import dictionary_status
 from hanpi_core.translation import sentence_translation
 from hanpi_core.search import search_english, search_pinyin
-from hanpi_core.comparison import comparison_view
+from hanpi_core.comparison import comparison_view, compare_transcript, transcript_breakdown
 from hanpi_core.asr import prepare_model, backend_name
 from hanpi_core.gloss import meaning_for, lookup_meaning, translate_online, translate_to_chinese
 from hanpi_core.library import save_entry, list_entries, get_entry, delete_entry, mark_practiced
@@ -107,7 +107,7 @@ def _transcribe(audio):
         text = transcribe(audio)
         if not clean_hanzi(text):
             return '', 'No Chinese speech was recognised. Try again, or use Type.'
-        return text, 'Check the transcript, then use this text. Transcription does not grade pronunciation.'
+        return text, 'Here’s what Hanpi heard.'
     except (ValueError,RuntimeError) as exc:
         return '', str(exc)
     except Exception as exc:
@@ -150,10 +150,29 @@ def _practice_result(audio, text, selected_index, use_asr=False, reading=None):
         syllable = syllables[index]
     except (ValueError, TypeError):
         return 'Choose a character first.', None, '', False
+    transcript, recognition_status = _transcribe(audio) if use_asr else ('', '')
+    word_matched = False
+    word_feedback = ''
+    if use_asr:
+        if transcript:
+            result = compare_transcript(syllable.hanzi, transcript)
+            word_matched = result.matches
+            heard_reading = ' '.join(s.written_pinyin for s in get_syllables(transcript))
+            heading = ('Words match!' if word_matched else
+                       'Similar syllable, different spelling. Hanpi may have misheard.' if result.sound_alikes and not result.flags and not result.additions else
+                       'Let’s try that word again.')
+            word_feedback = (f'### {heading}\n\n**You said:** {escape(transcript)} · {escape(heard_reading)}'
+                             f'\n\n**Target:** {syllable.hanzi} · {syllable.spoken_pinyin}\n\n')
+        else:
+            import logging
+            logging.getLogger(__name__).warning('Speech recognition returned no transcript: %s', recognition_status)
+            unavailable = any(term in recognition_status.lower() for term in ('model', 'dependency', 'interpreter', 'transcription failed'))
+            word_feedback = ('### Voice recognition isn’t ready.\n\nYou can still practise the tone. Check the app console for setup.\n\n'
+                             if unavailable else '### I couldn’t make out the word. Try once more.\n\n')
     try:
         score = analyze_tone(audio)
     except ValueError as exc:
-        return f"### Try a clearer sound\n\n{exc}", None, '', False
+        return word_feedback + f"### Try a clearer sound\n\n{exc}", None, transcript, False
     expected = syllable.expected_tone
     matched = expected != 5 and score.detected == expected
     if expected == 5:
@@ -166,9 +185,12 @@ def _practice_result(audio, text, selected_index, use_asr=False, reading=None):
         heading = 'A steady attempt — third tones can stay low.'
     else:
         heading = 'Good try — let’s shape it together.'
-    feedback = (f'### {heading}\n\n{PRACTICE_TIPS[expected]}\n\n'
+    measured = (f'**Tone shape:** {TONES[score.detected]}. **Target:** {TONES[expected]}.'
+                if score.detected else f'**Tone shape:** unclear. **Target:** {TONES[expected]}.')
+    feedback = (word_feedback + f'{measured}\n\n{heading} {PRACTICE_TIPS[expected]}\n\n'
                 '*Practice guidance, not a pronunciation grade.*')
-    transcript = _transcribe(audio)[0] if use_asr else ''
+    if use_asr:
+        matched = matched and word_matched
     return feedback, _pitch_figure(score.times, score.semitones, expected), transcript, matched
 
 
@@ -208,7 +230,7 @@ def build_app():
         active_saved = gr.State(None)
         origin = gr.State('Scan')
         stage = gr.State('results')
-        use_asr = gr.State(False)
+        use_asr = gr.State(True)
         with gr.Row():
             gr.HTML('<header id="brand"><div class="brand-mark" aria-hidden="true"><span class="brand-glyph">汉</span><span class="brand-tone">ˇ</span></div>'
                     '<div><div class="wordmark">hanpi<span class="wordmark-dot">.</span></div><div class="tagline">snap, translate, learn!</div></div></header>')
@@ -272,8 +294,8 @@ def build_app():
         with gr.Column(visible=False, elem_id='lesson') as lesson_view:
             back_to_input = gr.Button('← Back', size='sm', scale=0, min_width=0, elem_id='new-phrase')
             with gr.Column() as reading_view:
-                gr.HTML('<div class="screen-heading" id="lesson-heading"><p class="eyebrow">A PHRASE, A LITTLE POSSIBILITY</p>'
-                        '<h2>Let’s learn this phrase</h2></div>')
+                gr.HTML('<div class="screen-heading" id="lesson-heading"><p class="eyebrow">YOUR PHRASE</p>'
+                        '<h2>Let’s try it</h2></div>')
                 characters = gr.Radio(choices=[], value=None, label='Characters and pinyin', show_label=False,
                                       interactive=True, container=False, elem_id='character-choices')
                 gr.Markdown('Tap a character or its pinyin to practise. Colour shows the spoken tone.', elem_id='tone-legend')
@@ -310,7 +332,7 @@ def build_app():
                 with gr.Column(visible=False, elem_classes='surface') as recording_view:
                     mini_target = gr.HTML('',elem_id='mini-target')
                     recording = gr.Audio(sources=['microphone','upload'], type='numpy', format='wav', label='Say this syllable', elem_id='practice-recording')
-                    check_button = gr.Button('Check my tone', variant='primary')
+                    check_button = gr.Button('Check my voice', variant='primary')
                     feedback = gr.Markdown('', elem_id='feedback')
                     retry_button = gr.Button('Try again', variant='secondary')
                     with gr.Column(visible=False):
@@ -319,7 +341,7 @@ def build_app():
                         gr.Markdown('A pitch shape cannot independently verify consonants or vowels.', elem_classes='microcopy')
                 with gr.Row():
                     back_to_phrase = gr.Button('Back to phrase', min_width=0, variant='secondary')
-                    next_button = gr.Button('Next character', min_width=0, variant='secondary')
+                    next_button = gr.Button('Continue →', min_width=0, variant='secondary')
                 star_character = gr.Button('☆ Save this character', size='sm')
 
             with gr.Column(visible=False, elem_classes='surface') as whole_view:
@@ -327,13 +349,13 @@ def build_app():
                 with gr.Column() as whole_capture:
                     listen_whole = gr.Button('Listen to full phrase', variant='primary')
                     whole_recording = gr.Audio(sources=['microphone','upload'], type='numpy', format='wav', label='Record my attempt', elem_id='whole-recording')
-                    review_button = gr.Button('Review recording', variant='secondary')
+                    review_button = gr.Button('Check my words', variant='secondary')
                     whole_feedback = gr.Markdown('Transcription compares words, not tones. Recordings stay local.', elem_classes='microcopy')
                 whole_prepare = gr.Button('Prepare Mandarin speech model (~75 MB)', variant='secondary',visible=False)
                 heard_text = gr.State('')
                 compare_button = gr.Button('Compare corrected transcript',variant='secondary',visible=False)
                 comparison = gr.HTML('')
-                flagged_characters = gr.Radio(choices=[],label='Words to try again · tap one',interactive=True,visible=False,elem_id='word-differences')
+                flagged_characters = gr.Radio(choices=[],label='Tap a word for details',interactive=True,visible=False,elem_id='word-differences')
                 record_again = gr.Button('Record again',visible=False,variant='secondary')
                 with gr.Row():
                     finish_button = gr.Button('Finish practice', variant='primary')
@@ -538,10 +560,20 @@ def build_app():
 
         def compare_words(text,heard):
             try:
-                html,choices=comparison_view(text,heard)
+                html,choices=comparison_view(text,heard,include_matches=True)
                 return html,gr.update(choices=choices,value=None,visible=bool(choices))
             except ValueError as exc:
                 return _notice(str(exc)),gr.update(choices=[],value=None,visible=False)
+
+        def focus_from_sentence(text,index,reading,heard):
+            values=focus(text,index,reading)
+            try:
+                html,_=_target_panel(text,index,reading)
+                values[focus_card]=gr.update(value=html+transcript_breakdown(text,heard,index),visible=True)
+                values[stage]='sentence-focus'
+            except (ValueError,TypeError):
+                pass
+            return values
 
         def review_whole(audio,text):
             if audio is None:
@@ -552,29 +584,42 @@ def build_app():
             html,choices=compare_words(text,heard)
             return heard,message,html,choices,gr.update(visible=False),gr.update(visible=False),gr.update(visible=True),'whole-feedback'
 
-        def start_recording(text,index,reading):
+        def start_recording(text,index,reading,current):
             values=focus(text,index,reading)
             syllables=get_syllables(text,reading)
             selected_syllable=syllables[int(index)]
-            values.update({stage:'record',lesson_view:gr.update(visible=True,elem_classes=['stage-record']),
+            values.update({stage:'sentence-record' if current=='sentence-focus' else 'record',lesson_view:gr.update(visible=True,elem_classes=['stage-record']),
                            reading_view:gr.update(visible=False),focus_card:gr.update(visible=False),focus_actions:gr.update(visible=False),
+                           recording:gr.update(value=None,visible=True),check_button:gr.update(visible=True),
                            recording_view:gr.update(visible=True),mini_target:f'<b>{escape(selected_syllable.hanzi)}</b> · {escape(selected_syllable.spoken_pinyin)}'})
             return values
 
-        def back(current,source,text,index,reading):
+        def check_recording(audio,text,index,recognize,saved_id,reading):
+            result=_assess_and_track(audio,text,index,recognize,saved_id,reading)
+            compact=audio is not None
+            return (*result,gr.update(visible=not compact),gr.update(visible=not compact))
+
+        def back(current,source,text,index,reading,heard):
             if current=='results': return navigate(source)
             if current=='record': return focus(text,index,reading)
+            if current=='sentence-record': return focus_from_sentence(text,index,reading,heard)
+            if current=='sentence-focus':
+                html,choices=compare_words(text,heard)
+                values=whole_practice()
+                values.update({stage:'whole-feedback',comparison:html,flagged_characters:choices,
+                               whole_capture:gr.update(visible=False),whole_target:gr.update(visible=False),record_again:gr.update(visible=True)})
+                return values
             if current=='whole-feedback': return whole_practice()
             return show_phrase()
 
         route_outputs = [lookup_view,scan_view,type_view,speak_view,saved_view,lesson_view,notice,english_button,*nav_buttons.values(),saved_choice,saved_cards,saved_total,reference_audio,voice_status,fallback_text]
-        focus_outputs = [whole_capture,whole_target,record_again,comparison,flagged_characters,whole_recording,stage,lesson_view,reading_view,focus_actions,mini_target,characters,selected,focus_card,current_speech,phrase_info,focus_view,recording_view,whole_view,completion_view,recording,feedback,chart,transcript,notice,reference_audio,voice_status,fallback_text]
+        focus_outputs = [check_button,whole_capture,whole_target,record_again,comparison,flagged_characters,whole_recording,stage,lesson_view,reading_view,focus_actions,mini_target,characters,selected,focus_card,current_speech,phrase_info,focus_view,recording_view,whole_view,completion_view,recording,feedback,chart,transcript,notice,reference_audio,voice_status,fallback_text]
         save_outputs = [notice,saved_choice,saved_cards,saved_total,active_saved]
         for destination, button in nav_buttons.items():
             button.click(lambda dest=destination:navigate(dest), outputs=route_outputs)
         type_shortcut.click(lambda:navigate('Type'), outputs=route_outputs)
         stage_events=[]
-        stage_events.append(back_to_input.click(back,inputs=[stage,origin,phrase,selected,lesson_reading],outputs=list(dict.fromkeys(route_outputs+focus_outputs))))
+        stage_events.append(back_to_input.click(back,inputs=[stage,origin,phrase,selected,lesson_reading,heard_text],outputs=list(dict.fromkeys(route_outputs+focus_outputs))))
         lookup_outputs = lesson_outputs + [lookup_summary,lookup_candidates,lookup_query,lookup_page,more_results,search_mode,*lookup_groups]
         more_results.click(lambda query,direction,page:lookup(query,direction,page+1), inputs=[lookup_query,search_mode,lookup_page], outputs=lookup_outputs)
         for group in lookup_groups:
@@ -600,13 +645,15 @@ def build_app():
         stage_events.append(back_to_phrase.click(show_phrase, outputs=focus_outputs))
         stage_events.append(whole_back.click(show_phrase, outputs=focus_outputs))
         stage_events.append(whole_button.click(whole_practice, outputs=focus_outputs))
-        stage_events.append(try_button.click(start_recording,inputs=[phrase,selected,lesson_reading],outputs=focus_outputs))
-        check_button.click(_assess_and_track, inputs=[recording,phrase,selected,use_asr,active_saved,lesson_reading], outputs=[feedback,chart,transcript])
-        retry_button.click(lambda:(None,'Ready when you are. Record one clear syllable.',None,''), outputs=[recording,feedback,chart,transcript])
+        stage_events.append(try_button.click(start_recording,inputs=[phrase,selected,lesson_reading,stage],outputs=focus_outputs))
+        check_button.click(check_recording, inputs=[recording,phrase,selected,use_asr,active_saved,lesson_reading], outputs=[feedback,chart,transcript,recording,check_button])
+        recording.stop_recording(check_recording, inputs=[recording,phrase,selected,use_asr,active_saved,lesson_reading], outputs=[feedback,chart,transcript,recording,check_button])
+        retry_button.click(lambda:(gr.update(value=None,visible=True),'Ready when you are. Record one clear syllable.',None,'',gr.update(visible=True)), outputs=[recording,feedback,chart,transcript,check_button])
         review_button.click(review_whole, inputs=[whole_recording,phrase], outputs=[heard_text,whole_feedback,comparison,flagged_characters,whole_capture,whole_target,record_again,stage])
+        whole_recording.stop_recording(review_whole, inputs=[whole_recording,phrase], outputs=[heard_text,whole_feedback,comparison,flagged_characters,whole_capture,whole_target,record_again,stage])
         stage_events.append(record_again.click(whole_practice,outputs=focus_outputs))
         compare_button.click(compare_words, inputs=[phrase,heard_text], outputs=[comparison,flagged_characters])
-        stage_events.append(flagged_characters.input(focus, inputs=[phrase,flagged_characters,lesson_reading], outputs=focus_outputs))
+        stage_events.append(flagged_characters.input(focus_from_sentence, inputs=[phrase,flagged_characters,lesson_reading,heard_text], outputs=focus_outputs))
         stage_events.append(finish_button.click(complete, outputs=focus_outputs))
         stage_events.append(done_button.click(show_phrase, outputs=focus_outputs))
         stage_events.append(again_button.click(lambda text,reading:focus(text,'0',reading), inputs=[phrase,lesson_reading], outputs=focus_outputs))

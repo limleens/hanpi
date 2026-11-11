@@ -96,3 +96,16 @@ See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and t
 - [x] More tolerant voiced-audio extraction, quieter/stereo recording regressions, gentle coaching, and cautious treatment of homophone ASR spellings without fake passes.
 - [x] 92 tests pass; dark-OS 390px browser checks menu translation, staged recording, real Mandarin ASR, Back navigation and removal of technical controls.
 - [ ] Recheck the updated build on the actual phone; the user confirmed phone launch and real-image OCR on the preceding build.
+
+
+## Final voice feedback pass · 11 November
+
+- [x] Enable actual local ASR for isolated-character practice; show the exact heard text, pinyin and target instead of pitch tips alone.
+- [x] Separate word matching from measured experimental tone shape; show both observed and target tone labels. Keep Continue available, without unsupported perfect-pronunciation claims.
+- [x] Check microphone recordings on stop; retain explicit check buttons for uploads/retries.
+- [x] Whole-phrase word match confirmation, highlighted differences, and selectable target/heard Spotlight breakdown for every target character.
+- [x] Back preserves sentence transcript feedback through word Spotlight and recording stages.
+- [x] Shorter learner copy; no new logo/mascot project or dependency download before submission.
+- [x] Real human single-word and sentence ASR exercised in a dark-OS phone-width browser; exact-match Continue, replacement breakdown and nested Back verified.
+- [ ] Recheck the final voice feedback with the user's physical phone microphone; arbitrary-word ASR accuracy and full-sentence tone grading remain unvalidated/unsupported.
+- [x] Final validation: 104 pytest cases; same-interpreter strict dictionary/ASR check; current server startup; real-recording phone browser and OCR/Saved/desktop walkthroughs.

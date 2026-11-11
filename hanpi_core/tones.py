@@ -10,11 +10,11 @@ TONES = {
     5: "neutral tone",
 }
 PRACTICE_TIPS = {
-    1: "Sustain a steady, high vowel without a glide.",
-    2: "Begin around the middle of your range and glide upward.",
-    3: "Start low and stay low; in isolation you may dip and rise. In connected speech it often stays low.",
-    4: "Start high and fall quickly, like a decisive 'No!'.",
-    5: "Use a short unstressed vowel; neutral tone is not graded in this demo.",
+    1: "Keep your voice high and steady.",
+    2: "Let your voice rise.",
+    3: "Keep it low. On its own, let it dip and rise.",
+    4: "Start high, then drop.",
+    5: "Keep it short and light.",
 }
 
 @dataclass

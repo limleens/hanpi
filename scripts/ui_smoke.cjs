@@ -99,11 +99,11 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     assert.equal(opacity[3], 1); assert(opacity[0] < 1);
     await snapshot('mobile-spotlight');
     await button('Try it').click();
-    await button('Check my tone').click();
+    await button('Check my voice').click();
     await page.locator('#feedback').filter({hasText:'clearer sound'}).waitFor();
     await button('Try again').click();
     await page.locator('#feedback').filter({hasText:'Ready when you are'}).waitFor();
-    await button('Next character').click();
+    await button('Continue →').click();
     await page.waitForFunction(() => document.querySelector('.focus-hanzi')?.textContent === '啡');
     await button('Back to phrase').click();
     await button('Listen to phrase').waitFor();
@@ -137,14 +137,14 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     const recording = page.locator('#practice-recording');
     await recording.getByRole('button', {name:'Upload file', exact:true}).click();
     await recording.locator('input[type=file]').setInputFiles(path.join(artifacts, 'tone4.wav'));
-    await button('Check my tone').click();
+    await button('Check my voice').click();
     await page.locator('#feedback').filter({hasText:'Your tone shape looks close'}).waitFor();
     await snapshot('mobile-feedback');
-    await button('Next character').click();
+    await button('Continue →').click();
     await page.getByText('Nice practice session!', {exact:true}).waitFor();
     await button('Done').click();
     await button('Try the whole phrase').click();
-    await button('Review recording').click();
+    await button('Check my words').click();
     await page.getByText('Record your attempt first. You can play it back and choose a character to practise.', {exact:true}).waitFor();
     await button('Finish practice').click();
     await page.getByText('Nice practice session!', {exact:true}).waitFor();
@@ -153,7 +153,7 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     await navigate('Saved');
     const card = page.locator('.library-card').filter({hasText:'骂'});
     await card.waitFor();
-    assert.match(await card.innerText(), /1 practice\(s\)/);
+    assert.match(await card.innerText(), /0 practice\(s\)/);
     await page.reload({waitUntil:'domcontentloaded'});
     await navigate('Saved');
     await card.waitFor();
@@ -163,7 +163,7 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     await navigate('Saved');
     await button('Remove star').click();
     await page.locator('.library-empty').waitFor();
-    console.log('PASS save, matching practice counter, reload persistence, reopen and remove');
+    console.log('PASS save, no false word-match counter, reload persistence, reopen and remove');
 
     await navigate('Speak');
     await button('Use my recording').click();

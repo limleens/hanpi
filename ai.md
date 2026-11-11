@@ -53,3 +53,12 @@ Actual model validation used three public human Mandarin WAV files from the offi
 Whole-phrase English is now the primary Results content: a small explicit offline phrase/menu map covers common examples, and Google Translate/MyMemory are attempted for other sentences with bounded timeouts. If unavailable, approximate dictionary glosses are labelled rather than represented as fluent translation. The user explicitly requested direct sentence translation; lesson creation may send Chinese text online. Recordings remain local.
 
 Phone dark-mode contrast and staged Back navigation were checked in a browser configured with a dark OS preference. Technical setup/transcript-edit panels were removed from the learner flow. The tone coach now accepts a broader voiced range and quieter/shorter input; homophone ASR spellings are advisory. No inaccurate pronunciation percentage or whole-sentence tone score was added. The user's real recordings were not available for a measured false-rejection-rate study.
+
+
+## Final voice feedback
+
+Character practice now runs the existing local Mandarin ASR as well as the isolated F0 coach. **You said** and its pinyin come from the actual recognized spelling; the model never receives the target as a recognition prompt. Word matches and pitch-shape matches are separate evidence. A word match permits Continue and is not a pronunciation certificate. Missing recognition/model setup is logged and never becomes an invented transcript or success.
+
+Whole-sentence comparison retains aligned target/recognized segments for Spotlight, including missing words, sound-alike spellings and unequal-length replacements. Transcript pinyin gives the dictionary reading of the spelling, not an acoustically measured lexical tone. There is still no sentence tone, phoneme or consonant detector.
+
+Validation used actual public human recordings from the official model release: a short 对 crop and a full sentence, through the browser upload controls. Matched and mismatched targets, per-word heard breakdown and nested Back navigation passed. This is functional evidence for those recordings, not an accuracy study or a real phone microphone test. UI text was shortened; no Figma or new mascot artwork was used in this final pass.

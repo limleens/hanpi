@@ -25,6 +25,9 @@ class Comparison:
     flags: dict[int,str]
     additions: tuple[str,...]
     sound_alikes: dict[int,str]=field(default_factory=dict)
+    heard_parts: dict[int,str]=field(default_factory=dict)
+    target_parts: dict[int,str]=field(default_factory=dict)
+    spans: dict[int,tuple[int,int,int,int]]=field(default_factory=dict)
 
     @property
     def matches(self):
@@ -45,10 +48,20 @@ def compare_transcript(expected,recognized):
     flags={}
     additions=[]
     sound_alikes={}
+    heard_parts={}
+    target_parts={}
+    spans={}
     from pypinyin.contrib.tone_convert import to_normal
     expected_sounds=[to_normal(s.written_pinyin) for s in get_syllables(target)]
     heard_sounds=[to_normal(s.written_pinyin) for s in get_syllables(heard)]
     for op,i1,i2,j1,j2 in SequenceMatcher(None,reference,hypothesis,autojunk=False).get_opcodes():
+        for i in range(i1,i2):
+            # Unequal replacements are aligned as a segment, never invented
+            # one-to-one acoustic/character correspondences.
+            paired=op=='equal' or (op=='replace' and i2-i1==j2-j1)
+            heard_parts[i]=heard[j1+i-i1] if paired else heard[j1:j2]
+            target_parts[i]=target[i] if paired or op=='delete' else target[i1:i2]
+            spans[i]=(i,i+1,j1+i-i1,j1+i-i1+1) if paired else (i,i+1,j1,j2) if op=='delete' else (i1,i2,j1,j2)
         if op in ('replace','delete'):
             for i in range(i1,i2):
                 j=j1+(i-i1)
@@ -58,21 +71,42 @@ def compare_transcript(expected,recognized):
                     flags[i]='possible missing word' if op=='delete' else 'possible word mismatch'
         if op=='insert':
             additions.append(heard[j1:j2])
-    return Comparison(target,heard,flags,tuple(additions),sound_alikes)
+    return Comparison(target,heard,flags,tuple(additions),sound_alikes,heard_parts,target_parts,spans)
 
 
-def comparison_view(expected,recognized):
+def comparison_view(expected,recognized,include_matches=False):
     result=compare_transcript(expected,recognized)
     text=''.join(f'<mark class="word-difference" title="{escape(result.flags[i])}">{escape(c)}</mark>'
                  if i in result.flags else escape(c) for i,c in enumerate(result.expected))
     additions='; '.join(result.additions)
-    summary=('The transcript text matches the target. This does not verify pronunciation or tones.' if result.matches else
-             ('The words sound similar. Spelling may be a recognition mistake; listen back.' if result.sound_alikes and not result.flags and not result.additions else 'A few words may need another try. Speech recognition can also make mistakes.'))
-    html=(f'<section class="sentence-comparison" aria-live="polite"><h3>Expected</h3><p lang="zh-CN">{text}</p>'
-          f'<h3>What we heard</h3><p lang="zh-CN">{escape(recognized)}</p>'
+    summary=('Words match. Nice work!' if result.matches else
+             ('These sound similar. Hanpi may have chosen the wrong spelling.' if result.sound_alikes and not result.flags and not result.additions else 'Try the highlighted words. Speech recognition can also make mistakes.'))
+    html=(f'<section class="sentence-comparison" aria-live="polite"><h3>Target</h3><p lang="zh-CN">{text}</p>'
+          f'<h3>You said</h3><p lang="zh-CN">{escape(recognized)}</p>'
           f'<p>{escape(summary)}</p>'+(f'<p>Extra transcript text: {escape(additions)}</p>' if additions else '')+
-          '<small>Punctuation and Simplified/Traditional variants are ignored in alignment. '
-          'These are text differences, not detected tone or consonant errors.</small></section>')
+          '<p class="microcopy">Word check, not a tone score.</p>'
+          '<small>This does not verify pronunciation. These are text differences, '
+          'not detected tone or consonant errors.</small></section>')
     syllables=get_syllables(result.expected)
-    choices=[(f'{result.expected[i]} · {syllables[i].spoken_pinyin}',str(i)) for i,flag in result.flags.items()]
+    indices=range(len(result.expected)) if include_matches else result.flags
+    choices=[(f'{result.expected[i]} · {syllables[i].spoken_pinyin}' +
+              (f' → {result.heard_parts[i] or "not heard"}' if i in result.flags or i in result.sound_alikes else ''),str(i)) for i in indices]
     return html,choices
+
+
+def transcript_breakdown(expected,recognized,index):
+    """Show aligned ASR spelling/readings, never infer measured tones from text."""
+    result=compare_transcript(expected,recognized)
+    position=int(index)
+    if position not in result.heard_parts:
+        raise ValueError('Choose a character from the target.')
+    target=result.target_parts[position]
+    heard=result.heard_parts[position]
+    i1,i2,j1,j2=result.spans[position]
+    target_reading=' '.join(s.spoken_pinyin for s in get_syllables(result.expected)[i1:i2])
+    heard_reading=' '.join(s.written_pinyin for s in get_syllables(result.recognized)[j1:j2])
+    message=(f'{heard} · {heard_reading}' if heard else 'Not heard in this recording')
+    return (f'<section class="heard-breakdown"><h3>Target</h3>'
+            f'<p lang="zh-CN">{escape(target)} · {escape(target_reading)}</p>'
+            f'<h3>You said</h3><p lang="zh-CN">{escape(message)}</p>'
+            '<p class="microcopy">Pinyin follows the transcript. Try it alone to check the tone.</p></section>')

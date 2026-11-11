@@ -1,3 +1,14 @@
+# Voice feedback release check · 11 November, 23:20 UTC
+
+- Baseline: **92 tests passed** before this change. **104 tests passed**. The new suite adds word transcription, separate measured pitch, matched/mismatched/unavailable speech recognition, and aligned per-word breakdown regressions.
+- Real default Mandarin model, no mocked transcripts: a 0.42-second crop from the official release's public human `test_wavs/0.wav` returned 对. The phone-width browser uploaded it, displayed **You said: 对 · duì**, **Words match!**, separate tone-shape evidence, and continued to completion.
+- The same browser uploaded the full human recording, checked both an exact target and a target with 说明 replacing 介绍, and verified **说 · shuō → 介**, the correct target/heard Spotlight breakdown, and Back from recording → breakdown → sentence feedback → capture.
+- Dark OS preference at 390×844: readable audio/text, no horizontal overflow or browser errors. Screenshots: `word-transcript-match.png`, `sentence-match.png`, `heard-breakdown.png` in the local voice-final QA artifacts.
+- Stopping microphone recording is wired to the same checks as the upload buttons. Browser tests used uploaded human recordings, **not a physical microphone**. The user’s phone, accent coverage, recognition accuracy on arbitrary isolated syllables, and audible playback require real-device rechecking.
+- Transcript pinyin is the dictionary reading of the recognized spelling, **not measured tone recognition**. Only isolated-syllable F0 is measured; no sentence tone or phoneme grade is claimed. Very short/ambiguous words may be misheard or produce no transcript. A word match permits Continue but does not certify pronunciation.
+- HTTP startup and same-interpreter `check_environment.py --strict --asr` passed; 122,143 dictionary entries and the local speech model are ready. The full OCR/Spotlight/Saved/desktop browser walkthrough also passed. Audio controls collapse after checking so word feedback and Continue need less scrolling.
+- This section supersedes older transcript-edit and disabled character-ASR descriptions below.
+
 # Final phone feedback validation
 
 - **92 tests passed**, including quieter stereo/phone-level synthetic tones, complete offline phrase/menu translation, unseen-sentence provider response, honest fallback labelling and homophone ASR handling.
