@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from hanpi_core.ocr import extract_hanzi
-from hanpi_core.gloss import meaning_for
+from hanpi_core.gloss import meaning_for, lookup_meaning, translate_online
 from hanpi_core.library import save_entry, list_entries, get_entry, delete_entry, mark_practiced
 from hanpi_core.text import clean_hanzi, get_syllables
 from hanpi_core.tones import PRACTICE_TIPS, TONES, analyze_tone
@@ -28,7 +28,7 @@ CSS = """
 #eyebrow {letter-spacing:.16em;font-size:.75rem;font-weight:800;color:#a36a3b;text-transform:uppercase;}
 
 #hero{border-radius:25px;padding:2.2rem!important;background:radial-gradient(circle at 95% 10%,#ffe7d1,transparent 45%),linear-gradient(125deg,#fff7ed,#fffdf9);border:1px solid #f2e4d6;margin:15px 0 23px;}
-.tone-strip{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;}
+.tone-strip{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;max-height:380px;overflow-y:auto;}
 .tone-chip{min-width:76px;display:flex;flex-direction:column;gap:4px;padding:13px;border-radius:16px;text-align:center;border:1px solid transparent;}
 .tone-chip b{font-size:28px}.tone-chip small{font-size:15px;font-weight:600}
 .tone-1{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;}
@@ -259,10 +259,10 @@ def build_app():
                         gr.Markdown("### 1. Start with a photo")
                         photo = gr.Image(label="Photo of Hanzi", type="pil", sources=["upload", "webcam", "clipboard"], height=225)
                         ocr_btn = gr.Button("Find Hanzi in photo", variant="secondary")
-                        ocr_message = gr.Markdown("Try a clear close-up of 1–8 Chinese characters.")
-                        hanzi_input = gr.Textbox(label="Detected / editable Hanzi", value="你好", max_lines=1,
+                        ocr_message = gr.Markdown("Upload Chinese writing from a sign, menu, or textbook. Check the recognised text.")
+                        hanzi_input = gr.Textbox(label="Detected Hanzi (all characters, editable)", value="你好", lines=3, max_lines=10,
                                                  placeholder="例如：你好 or 中国")
-                        gr.Examples(examples=[["你好"], ["中国"], ["谢谢"], ["妈妈"], ["汉字"]],
+                        gr.Examples(examples=[["你好"], ["北京大学"], ["我喜欢咖啡"], ["图书馆在哪里"], ["今天的天气很好"], ["谢谢"]],
                                     inputs=[hanzi_input], label="Quick examples")
                     with gr.Column(scale=1, min_width=300):
                         gr.Markdown("### 2. Practise one syllable")
