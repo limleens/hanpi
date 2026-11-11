@@ -5,7 +5,9 @@
 ## Runtime
 
 - **RapidOCR:** pretrained ONNX Chinese OCR models, local processing. Tesseract fallback.
-- **PyPinyin:** dictionary/rules for reading and tone sandhi, not a generative model.
+- **PyPinyin:** dictionary/rules for reading and basic tone sandhi, not a generative model.
+- **CC-CEDICT via pycccedict:** installed offline Chinese-English dictionary (CC BY-SA 4.0; CC-CEDICT contributors/MDBG credited). Longer phrases are segmented into word glosses, not fluent translation.
+- **deep-translator:** optional online translation when explicitly clicked; sends selected Chinese text to an external provider. Not part of the offline default flow.
 - **Praat/Parselmouth:** signal-processing pitch measurement (F0); we wrote a simple contour heuristic which can abstain. This is not a trained Mandarin tone model and should not be presented as one.
 - **SpeechSynthesis:** browser/platform TTS for pronunciation examples.
 - **Faster-Whisper:** optional local text transcript; downloads a model only when installed/used. ASR text is NOT the measured spoken tone.
@@ -18,4 +20,4 @@ OpenAI ChatGPT (GPT-6) assisted with GitHub research, architecture, initial impl
 
 Initial tests cover only artificially generated pitch contours and text rules; a generated Hanzi image was OCR-smoke-tested with Tesseract. Human recording accuracy, real-photo OCR, and the user's Windows install remain to be tested before submission. Pitch contour ≠ complete pronunciation; low or unclear tone 3 may be unclassified. This is educational feedback, not a validated language-assessment or medical product.
 
-Default OCR and audio grading run locally; user recordings are not sent to an LLM. Browser speech-synthesis services may depend on the host platform.
+Default OCR, dictionary lookup and audio grading run locally; microphone recordings are not sent to an LLM. Online translation only sends text after an explicit click. Browser speech-synthesis services may depend on the host platform.
