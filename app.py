@@ -427,7 +427,30 @@ def build_app():
                          outputs=[starred_status, saved_choice, starred_cards, starred_total])
     return demo
 
+def launch_app():
+    """Local desktop by default; optional password-protected temporary HTTPS link.
+
+    This SQLite-backed prototype is SINGLE USER. Do not expose it without auth.
+    """
+    share = os.environ.get("HANPI_SHARE", "0") == "1"
+    host = os.environ.get("HANPI_HOST", "127.0.0.1")
+    remote = share or host not in ("127.0.0.1", "localhost")
+    username = os.environ.get("HANPI_DEMO_USER")
+    password = os.environ.get("HANPI_DEMO_PASSWORD")
+    if remote and (not username or not password or len(password) < 10):
+        raise RuntimeError(
+            "Remote mode shares one local Starred library. Set HANPI_DEMO_USER "
+            "and HANPI_DEMO_PASSWORD (at least 10 characters) before enabling it."
+        )
+    auth = (username, password) if remote else None
+    port = int(os.environ.get("PORT", "7860"))
+    return build_app().launch(
+        server_name=host, server_port=port, share=share, auth=auth,
+        inbrowser=not share, show_error=True,
+        theme=gr.themes.Soft(primary_hue="orange", secondary_hue="slate", neutral_hue="stone"),
+        css=CSS,
+    )
+
+
 if __name__ == "__main__":
-    build_app().launch(server_name="127.0.0.1", server_port=7860, inbrowser=True,
-                       theme=gr.themes.Soft(primary_hue="orange", secondary_hue="slate", neutral_hue="stone"),
-                       css=CSS)
+    launch_app()
