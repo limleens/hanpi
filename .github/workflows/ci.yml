@@ -28,3 +28,22 @@ jobs:
           ui = app.build_app()
           print("Hanpi initialized with", len(ui.fns), "events")
           PY
+      - name: HTTP server smoke test
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python - <<'PY'
+          import urllib.request
+          import app
+          demo = app.build_app()
+          _, local_url, _ = demo.launch(server_name="127.0.0.1",
+                                         server_port=7875,
+                                         prevent_thread_lock=True,
+                                         inbrowser=False,
+                                         quiet=True,
+                                         css=app.CSS)
+          with urllib.request.urlopen(local_url, timeout=15) as response:
+              assert response.status == 200
+              print("HTTP 200 from", local_url)
+          demo.close()
+          PY
