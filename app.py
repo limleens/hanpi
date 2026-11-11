@@ -304,7 +304,8 @@ def build_app():
                     with gr.Column(scale=1, min_width=300):
                         gr.Markdown("### 1. Start with a photo")
                         photo = gr.Image(label="Photo of Hanzi · Camera / Upload / Paste", type="pil",
-                                          sources=["webcam", "upload", "clipboard"], height=245)
+                                          sources=["webcam", "upload", "clipboard"], height=245,
+                                          webcam_options=gr.WebcamOptions(mirror=False, constraints={"facingMode": "environment"}))
                         gr.Markdown("On iPhone: tap Camera, allow access, then photograph the characters. Use an HTTPS website.")
                         ocr_btn = gr.Button("Find Hanzi in photo", variant="secondary")
                         ocr_message = gr.Markdown("Upload Chinese writing from a sign, menu, or textbook. Check the recognised text.")
