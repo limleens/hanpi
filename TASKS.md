@@ -37,3 +37,14 @@
 - [ ] Dedicated iPhone experience and optional cloud sync for starred cards.
 
 **Scope:** Hanpi can read longer Chinese text, but scoring is deliberately one syllable at a time. Do not claim verified full-sentence pronunciation grading or clinical accuracy.
+
+
+## Mobile and natural reference speech update
+- [x] Responsive Gradio adjustments for narrow mobile screens.
+- [x] Mobile photo input with camera, upload and clipboard sources.
+- [x] Optional online Mandarin neural voices (Xiaoxiao/Yunxi/Xiaoyi) with adjustable rate, plus browser TTS fallback.
+- [x] Password-protected temporary HTTPS share mode to test iPhone Safari.
+- [x] Added mock neural-voice and remote-auth automated tests.
+- [ ] Confirm the neural TTS service connects and returns human-sounding audio using a real Internet connection.
+- [ ] Test iPhone camera capture and microphone permissions over HTTPS.
+- [ ] Launch a permanent phone-accessible website using per-user saved vocabulary storage.
