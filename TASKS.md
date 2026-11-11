@@ -119,3 +119,10 @@ See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and t
 - [x] Real authenticated browser checks at 320/390/1280px, light/dark appearance, wrong-password rejection, protected config, successful login and refresh persistence.
 - [x] Full Python suite: 105 tests passed; existing remote-auth guard remains tested.
 - [ ] Confirm final sign-in appearance on the physical phone; browser checks use desktop Chromium with phone-sized viewports.
+
+## Submission handoff · 11 November
+
+- [x] Rewrite README around a reviewer-friendly quick start, the actual submission branch, a short voice-led walkthrough, architecture, limits and privacy.
+- [x] Consolidate ai.md into an accurate account of development assistance, runtime models, real versus mocked validation and current limits.
+- [x] Provide a submission checklist and prepare a tracked-source ZIP without credentials, local saved data, recordings, model downloads or virtual environments.
+- [ ] Owner uploads the one-page write-up, demo/video and private reviewer access details to the challenge portal; PR #2 stays unmerged.
