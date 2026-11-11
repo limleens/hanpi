@@ -7,7 +7,6 @@ available separately when this third-party service cannot be reached.
 from __future__ import annotations
 
 import asyncio
-import os
 from pathlib import Path
 import tempfile
 import time
@@ -27,15 +26,16 @@ _CACHE_DIR = Path(tempfile.gettempdir()) / "hanpi_neural_audio"
 
 def prepare_text(text: str) -> str:
     """Never truncate content silently. Reject excessive service requests."""
-    cleaned = clean_hanzi(text)
-    if not cleaned:
+    phrase = (text or "").strip()
+    chars = clean_hanzi(phrase)
+    if not chars:
         raise ValueError("Upload a photo or enter Hanzi before playing audio.")
-    if len(cleaned) > TTS_MAX_CHARACTERS:
+    if len(chars) > TTS_MAX_CHARACTERS:
         raise ValueError(
             f"Select a shorter passage (up to {TTS_MAX_CHARACTERS} Hanzi) "
             "for natural voice playback. OCR and pinyin retain the full passage."
         )
-    return cleaned
+    return phrase
 
 
 def _rate(rate: float) -> str:
