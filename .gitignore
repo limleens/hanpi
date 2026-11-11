@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.gradio/
+.pytest_cache/
+*.wav
+*.mp3
+.DS_Store
+
+# Offline saved vocabulary
+hanpi/data/
+data/
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
