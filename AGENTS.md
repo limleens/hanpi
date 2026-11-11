@@ -48,3 +48,6 @@ The user found the first redesign too generic. Do not revert to the serif/beige 
 - Bright orange, teal and navy accents on warm cream; short tactile buttons, rounded flashcards, original CSS Hanzi mark and small speech-bubble mascot.
 - Keep the interface airy, not cluttered: only the active task needs emphasis; avoid big gradients, random emoji piles, generic stock illustrations and fake feedback.
 - See docs/VISUAL_DESIGN.md. Review on real phone widths before merging.
+
+## 11 Nov release-blocking bug bash
+Before polishing or adding features, read **docs/RELEASE_BUG_BASH.md**. The user has reported broken English translation, offline dictionary unavailable (vocabulary only shows 我), OCR failure on real tiny red Chinese menu text, and a whole-sentence 'Try' button without actual comparison. These are now the overriding engineering priorities. Keep the bubbly design and existing shared Results UX. Do not make claims of whole-sentence tone detection from ASR text or the existing isolated F0 analyzer. Commit fixes to the current feature branch and update PR #2.
