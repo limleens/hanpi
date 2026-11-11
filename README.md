@@ -1,83 +1,87 @@
-# hanpi · 汉拼
+# Hanpi · 汉拼
 
-**See it. Say it. Understand your tone.** A desktop-first Mandarin pronunciation coach for the Hiya Voice AI Challenge.
+**See it. Say it. Learn it.** A desktop-first Mandarin pronunciation studio built for the Hiya Voice AI Challenge.
 
-Hanpi turns a photo of Hanzi into a spoken practice session. Upload a Chinese phrase, check the pinyin, select one character, listen to a reference voice, **say one syllable aloud**, and inspect the contour of your actual pitch with actionable feedback.
+Take or paste an image of Chinese writing, extract the Hanzi with local OCR, read colour-coded pinyin, hear reference speech, practice an isolated syllable through the microphone, and save vocabulary to your offline ★ Starred collection.
 
-## Run locally (desktop browser)
+## What works and what is experimental
 
-Use **Python 3.11** and a computer with a microphone.
+| Feature | Implementation | Status |
+| --- | --- | --- |
+| Paste, drag/drop, upload a Chinese image | Gradio image input + RapidOCR ONNX (local) | Implemented; verify OCR result |
+| Arbitrary-length recognised Hanzi | No 24-character truncation | Implemented; very long input may be slower |
+| Mandarin pinyin and basic third-tone sandhi | PyPinyin phrase dictionary | Implemented; polyphonic words require review |
+| English word meanings | CC-CEDICT via pycccedict | Implemented; dictionary definitions are contextual approximations |
+| Longer text meanings | Word-by-word dictionary gloss | Implemented; **not** fluent sentence translation |
+| Online translation | deep-translator, opt-in button | Implemented; depends on external service |
+| Browser Mandarin reference speech | Web Speech API | Implemented; voice quality varies by browser/device |
+| Microphone → pitch contour → tone feedback | Praat via Parselmouth | Experimental **one syllable at a time**, not a validated score |
+| Optional transcription | Faster-Whisper | Additional install; NOT used to grade tone |
+| Starred words/sentences | SQLite persisted locally | Implemented |
 
-1. Download this feature branch and enter the hanpi folder.
-2. Create a Python virtual environment:
+**Important:** Hanpi does not accurately grade whole spoken paragraphs or detect consonant/vowel mistakes yet. Mandarin sounds are context-dependent and no automatic tone score should be treated as definitive.
 
-```bash
-python -m venv .venv
-```
+## Run it locally
 
-Activate it: on Windows, run `.venv\Scripts\Activate.ps1`; on macOS/Linux run `source .venv/bin/activate`.
+Python **3.11** recommended. On Windows PowerShell:
 
-```bash
+```powershell
+git clone https://github.com/limleens/hanpi.git
+cd hanpi
+py -3.11 -m venv .venv
+.venvScriptsActivate.ps1
 python -m pip install -r requirements.txt
 python app.py
 ```
 
-Open **http://127.0.0.1:7860** in your desktop browser and grant microphone access. No GPU or API keys are needed. First-time installation downloads model/package dependencies.
+On macOS/Linux, create a Python 3.11 virtual environment and run the same install/app commands. Open http://127.0.0.1:7860 in the browser. Microphone permission is needed for voice recording.
 
-## Demo
+Pasting or dropping images works in the photo input. Correct any OCR mistakes in the editable Hanzi field before practising. The home screen starts with 你好 solely as a sample.
 
-1. Start with the sample **你好**, or upload a photo, click **Find Hanzi in photo**, and correct the OCR output if necessary.
-2. Select **你**: its written pinyin is *nǐ*, but before **好** it is normally pronounced *ní* (third-tone sandhi).
-3. Use **Hear an example** (it plays a whole phrase when the selected syllable changes tone in context; otherwise the single character).
-4. Record yourself saying **ní only**, then press **Analyse my tone**.
-5. View your pitch curve, the estimated contour type, and a correction tip.
-6. Repeat with **好** or try **中国 / 谢谢 / 妈妈**.
+## Try something other than 你好
 
-For tone testing, isolated **妈, 麻, 马, 骂** target tones 1–4 respectively.
+Test phrases such as:
 
-## Architecture and honest limitations
+- 北京大学 — Beijing University (word-by-word dictionary gloss may show the two parts)
+- 我喜欢咖啡 — I like coffee
+- 图书馆在哪里 — Where is the library?
+- 今天的天气很好 — The weather is nice today
 
-| Stage | Technology |
-| --- | --- |
-| Photo → Chinese text | Local RapidOCR pretrained ONNX model; optional Tesseract fallback |
-| Hanzi → written/spoken pinyin | PyPinyin with tone-sandhi handling |
-| Reference speech | Browser SpeechSynthesis (platform-dependent voice availability) |
-| Voice → pitch | Praat/Parselmouth F0 extraction from microphone audio |
-| Pitch → coaching | Interpretable, non-ML heuristic contour classification; abstains if uncertain |
-| Optional speech transcription | Faster-Whisper tiny, CPU; installed separately |
+Full OCR and pinyin output are no longer limited to 24 characters. A long recognised passage is displayed in a scrollable tone-colour panel. The character selector still scores **one spoken syllable** at a time, so choose one target rather than recording a paragraph.
 
-**Important:** This is a functional **isolated-syllable practice prototype**, not a validated Mandarin pronunciation-scoring model. There is no automatic alignment of connected multi-syllable speech. Pitch alone cannot independently identify the consonant/vowel, and naturally low third tones may be marked uncertain. Neutral tone is not scored. The reference is a schematic curve, not voice-matched. Neither OCR nor polyphonic-character readings are infallible. Keep the page open during recording; there is no iPhone background listening.
+For longer text, CC-CEDICT's greedy word matching creates a labelled **gloss**, not a confident fluent translation. You can explicitly click the online translation button to request more natural English, then edit the result. Online translation supports up to 2,500 Hanzi per request; it raises an error rather than silently dropping characters. OCR/pinyin do not have this translation-service limit.
 
-**Experimental text transcription** can be enabled with:
+For pronunciation, compare 妈 (mā), 麻 (má), 马 (mǎ), and 骂 (mà) as isolated single-character tests. Remember that 你好 is written nǐ hǎo but pronounced ní hǎo with third-tone sandhi.
 
-```bash
-python -m pip install -r requirements-asr.txt
-```
+## Starred collection
 
-It downloads a small pretrained Whisper model on first use; ASR is not used for tone grading.
+Choose **★ Star word** or **★ Star sentence** to save Hanzi, written pinyin, spoken pinyin and a meaning. Visit the **Starred** tab to view vocabulary cards, reopen an entry for practice, or remove it. Successful practice attempts on saved items increase their counter.
 
-## Testing
+Storage: `data/hanpi_library.sqlite3`. The database survives restarts but is not synced across devices and is excluded from Git. To back up your collection, copy this file.
+
+## Tests
 
 ```bash
 python -m pip install pytest
 python -m pytest -q
 ```
 
-Unit tests cover four generated pitch contours, silent recordings, Hanzi filtering and third-tone sandhi. Synthetic tests do **not** prove accuracy on human speech. See [TASKS.md](TASKS.md) for outstanding manual validation.
+Local testing covers dictionary logic, basic tone rules, SQLite memory and synthetic pitch contours. **Testing with actual Windows microphones, real Chinese photos, Mandarin voices, and native speakers remains necessary.** GitHub Actions includes tests and UI import smoke checks.
 
-## Inspiration and code provenance
+## Technical architecture and licensing
 
-New code developed for Hanpi. Project-level architecture informed by [Tone.me](https://github.com/tone-me/tone-me) (MIT), [Mandarin Speech Coach](https://github.com/anton-dergunov/mandarin-speech-coach) and [Mandarin Pronunciation Evaluator](https://github.com/FeisalDy/oral_pronunciation_assessment). **No entire source files were copied**. Third-party dependencies include [RapidOCR](https://github.com/RapidAI/RapidOCR), [PyPinyin](https://github.com/mozillazg/python-pinyin) (MIT), and [Parselmouth](https://github.com/YannickJadoul/Parselmouth). Review individual package/model licences if redistributing.
+- **RapidOCR**: Chinese text recognition using local ONNX models.
+- **PyPinyin**: written pinyin and basic context/tone sandhi.
+- **pycccedict**: CC-CEDICT Mandarin-English vocabulary.
+- **Parselmouth/Praat**: acoustic pitch extraction and shape-based tone coaching.
+- **deep-translator**: optional, explicit online translation.
+- **Gradio**: desktop-first web UI and microphone capture.
+- **SQLite**: persistent private starred library.
 
-See [ai.md](ai.md) for project and developer AI usage. Photos/recordings are processed locally by default; speech playback may rely on browser/platform services.
+The code uses packages through their documented APIs, instead of pasting in other projects' implementation code. Design and architecture were informed by [Tone.me](https://github.com/tone-me/tone-me) (MIT), [Mandarin Speech Coach](https://github.com/anton-dergunov/mandarin-speech-coach), [PyPinyin](https://github.com/mozillazg/python-pinyin), [RapidOCR](https://github.com/RapidAI/RapidOCR), and [pycccedict](https://github.com/patrickpei/pycccedict).
 
+**CC-CEDICT content is CC BY-SA 4.0**, credited to the CC-CEDICT contributors and MDBG. The dataset is installed separately through pycccedict; it is not copied into this repository. See third-party dependency repositories for their code licences. See [ai.md](ai.md) for AI usage and [TASKS.md](TASKS.md) for the project checklist.
 
-## ★ Starred collection (offline memory)
+## Privacy
 
-Hanpi includes a Starred tab. After recognising Hanzi, choose a character or type a short word from the visible phrase, then select Star word; select Star sentence to save the entire 1–8-character phrase. Each saved entry stores Hanzi, written pinyin, spoken pinyin (with basic sandhi), and its editable English meaning.
-
-From the Starred tab, select a flashcard and choose Practise this again to return to microphone practice, or remove the star. Re-starring updates a definition without creating duplicates or losing past practice attempts.
-
-The library is a SQLite file at hanpi/data/hanpi_library.sqlite3, and persists after restarting the application. Back up the file to preserve your starred collection. The data is local to the computer running Hanpi, not cloud synced; SQLite files are gitignored. Override the path with the HANPI_LIBRARY_PATH environment variable.
-
-A small offline gloss dictionary covers built-in examples. Arbitrary OCR results are NOT automatically translated; users must provide their own English meaning before saving. The tone analysis still expects one isolated syllable rather than a full-sentence recording.
+OCR and pitch analysis run locally. The optional online translation button shares the selected Chinese text with a third-party translation provider only when clicked. Browser speech synthesis may use device or platform services. No user accounts or telemetry are part of this prototype.
