@@ -5,6 +5,7 @@ Run from this directory: python app.py
 from __future__ import annotations
 
 from html import escape
+import os
 import gradio as gr
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,6 +15,7 @@ from hanpi_core.gloss import meaning_for, lookup_meaning, translate_online
 from hanpi_core.library import save_entry, list_entries, get_entry, delete_entry, mark_practiced
 from hanpi_core.text import clean_hanzi, get_syllables
 from hanpi_core.tones import PRACTICE_TIPS, TONES, analyze_tone
+from hanpi_core.voice import synthesize_neural, voice_options, DEFAULT_VOICE
 
 CSS = """
 .gradio-container {max-width: 1160px !important;margin:auto !important;}
@@ -43,6 +45,20 @@ CSS = """
 .library-card .meaning{font-size:14px;margin-top:12px;color:#45392e}
 .library-card .meta{font-size:12px;color:#a88764;margin-top:12px}
 .library-empty{padding:28px;text-align:center;background:#fffaf5;border:1px dashed #d8bda4;border-radius:20px}
+
+@media(max-width:700px){
+.gradio-container{max-width:100%!important;padding:0 12px!important;}
+#hero{padding:1.25rem!important;margin:6px 0 14px!important;border-radius:18px!important;}
+#hero h1{font-size:2.6rem!important;}
+#hero p{font-size:.94rem!important;}
+#target-card{padding:15px!important;min-height:120px!important;}
+#target-card .hanzi{font-size:3rem!important;}
+.library-grid{grid-template-columns:1fr;}
+.tone-chip{min-width:57px;padding:8px 10px;}
+.tone-chip b{font-size:23px;}
+.tone-chip small{font-size:13px;}
+button{min-height:42px;}
+}
 """
 
 def _readings(text):
@@ -264,6 +280,15 @@ def _translate_phrase_ui(text, previous):
         return translated, "✅ Translated online. Review the result before starring."
     except (ValueError, RuntimeError) as exc:
         return previous, f"⚠️ {exc}"
+
+
+async def _speak_neural_ui(text, voice, rate):
+    """On-demand online neural reference speech; never automatic on upload."""
+    try:
+        path = await synthesize_neural(text, voice=voice, rate=float(rate))
+        return path, "Natural Mandarin reference ready. Press play if your phone blocks autoplay."
+    except (RuntimeError, ValueError) as exc:
+        return None, f"Neural voice unavailable: {exc}. Use the browser-voice buttons."
 
 
 def build_app():
