@@ -184,7 +184,7 @@ def test_missing_and_replaced_words_point_to_original_character_indices():
     assert set(replaced.flags)=={3,4}
     html,choices=comparison_view('我喜欢咖啡','我喜欢茶')
     assert [index for _,index in choices]==['3','4']
-    assert 'ASR can be wrong' in html and 'not detected tone' in html
+    assert 'recognition can also make mistakes' in html and 'not detected tone' in html
 
 
 def test_extra_recognized_words_are_shown_without_blame_on_target_characters():

@@ -7,7 +7,7 @@
 - **RapidOCR:** pretrained ONNX Chinese OCR models, local processing. Tesseract fallback.
 - **PyPinyin:** dictionary/rules for reading and basic tone sandhi, not a generative model.
 - **CC-CEDICT via pycccedict:** installed offline Chinese-English dictionary (CC BY-SA 4.0; CC-CEDICT contributors/MDBG credited). Longer phrases are segmented into word glosses, not fluent translation.
-- **deep-translator:** optional online translation when explicitly clicked; sends selected Chinese text to an external provider. Not part of the offline default flow.
+- **Sentence translation:** lesson creation can request Google Translate/MyMemory for full English; common phrase/menu translations are cached offline. Legacy English online search uses deep-translator. Only selected text is sent; recordings stay local.
 - **Praat/Parselmouth:** signal-processing pitch measurement (F0); we wrote a simple contour heuristic which can abstain. This is not a trained Mandarin tone model and should not be presented as one.
 - **SpeechSynthesis:** browser/platform TTS for pronunciation examples.
 - **sherpa-onnx / Mandarin Zipformer:** default local Mandarin sentence transcription using a compact Apache-2.0 model from the official sherpa-onnx GitHub release. An explicit one-time download (~75 MB) is SHA-256 checked; recordings stay local.
@@ -46,3 +46,10 @@ The dictionary loader now explicitly decodes UTF-8 instead of hiding an upstream
 Sentence practice transcribes real audio locally and compares the resulting text with the target. Highlighted words are **possible text differences**: the learner can correct ASR mistakes and open a flagged target character in Spotlight. A matching transcript does not prove correct pronunciation. No numeric pronunciation grade, per-syllable tone diagnosis or consonant-error detector was added.
 
 Actual model validation used three public human Mandarin WAV files from the official model release, plus browser upload/transcription/comparison with matching and mismatching target sentences. This is functional integration evidence, not a measured ASR accuracy study or a test of the user's microphone. The small-red and clean OCR PNGs committed under tests/fixtures are generated fixtures; they are explicitly not the user's inline menu images. Exact-image benchmarking remains pending access to the original file. Phone camera/microphone and audible device TTS remain manual checks.
+
+
+## Final phone feedback pass
+
+Whole-phrase English is now the primary Results content: a small explicit offline phrase/menu map covers common examples, and Google Translate/MyMemory are attempted for other sentences with bounded timeouts. If unavailable, approximate dictionary glosses are labelled rather than represented as fluent translation. The user explicitly requested direct sentence translation; lesson creation may send Chinese text online. Recordings remain local.
+
+Phone dark-mode contrast and staged Back navigation were checked in a browser configured with a dark OS preference. Technical setup/transcript-edit panels were removed from the learner flow. The tone coach now accepts a broader voiced range and quieter/shorter input; homophone ASR spellings are advisory. No inaccurate pronunciation percentage or whole-sentence tone score was added. The user's real recordings were not available for a measured false-rejection-rate study.

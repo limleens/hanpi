@@ -13,6 +13,7 @@ import numpy as np
 
 from hanpi_core.ocr import recognize_image
 from hanpi_core.dictionary import dictionary_status
+from hanpi_core.translation import sentence_translation
 from hanpi_core.search import search_english, search_pinyin
 from hanpi_core.comparison import comparison_view
 from hanpi_core.asr import prepare_model, backend_name
@@ -48,7 +49,7 @@ def _target_panel(text: str, index: str, reading=None):
     return spotlight(text, index, reading)
 
 
-def prepare_lesson(text, saved_id=None, meaning=None, reading=None, provenance=None):
+def prepare_lesson(text, saved_id=None, meaning=None, reading=None, provenance=None, allow_online=False):
     """One data path for Scan, Type, search, ASR and Saved."""
     text = (text or '').strip()
     if not clean_hanzi(text):
@@ -62,9 +63,9 @@ def prepare_lesson(text, saved_id=None, meaning=None, reading=None, provenance=N
     elif meaning is not None:
         note = provenance or 'Online translation · review the meaning in context.'
     else:
-        result = lookup_meaning(text)
+        result = sentence_translation(text,allow_online=allow_online)
         meaning = result.text
-        note = f'{result.source} · {result.note}'
+        note = result.source
     choices = character_choices(text, reading)
     vocabulary, words = vocabulary_view(text)
     return dict(text=text, choices=choices, meaning=meaning, reading=reading,
@@ -152,22 +153,21 @@ def _practice_result(audio, text, selected_index, use_asr=False, reading=None):
     try:
         score = analyze_tone(audio)
     except ValueError as exc:
-        return f"### Couldn't judge that recording.\n\n{exc}", None, '', False
+        return f"### Try a clearer sound\n\n{exc}", None, '', False
     expected = syllable.expected_tone
     matched = expected != 5 and score.detected == expected
     if expected == 5:
         heading = 'Neutral tone is not automatically graded.'
     elif score.detected is None:
-        heading = "Couldn't judge that recording."
+        heading = 'Keep going — try a clearer sound.'
     elif matched:
         heading = 'Your tone shape looks close.'
+    elif expected==3 and score.detected==1:
+        heading = 'A steady attempt — third tones can stay low.'
     else:
-        heading = "Let's shape that tone."
+        heading = 'Good try — let’s shape it together.'
     feedback = (f'### {heading}\n\n{PRACTICE_TIPS[expected]}\n\n'
-                f'Expected **{TONES[expected]}** · observed **{TONES.get(score.detected, "uncertain")}**. '
-                f'{score.reason}\n\n'
-                '*Experimental pitch coaching for one syllable. This does not verify consonants, '
-                'vowels or whole-sentence pronunciation.*')
+                '*Practice guidance, not a pronunciation grade.*')
     transcript = _transcribe(audio)[0] if use_asr else ''
     return feedback, _pitch_figure(score.times, score.semitones, expected), transcript, matched
 
@@ -207,11 +207,12 @@ def build_app():
         selected = gr.State(None)
         active_saved = gr.State(None)
         origin = gr.State('Scan')
-        settings_open = gr.State(False)
+        stage = gr.State('results')
+        use_asr = gr.State(False)
         with gr.Row():
             gr.HTML('<header id="brand"><div class="brand-mark" aria-hidden="true"><span class="brand-glyph">汉</span><span class="brand-tone">ˇ</span></div>'
                     '<div><div class="wordmark">hanpi<span class="wordmark-dot">.</span></div><div class="tagline">snap, translate, learn!</div></div></header>')
-            settings_toggle = gr.Button('Settings', scale=0, min_width=88, elem_id='settings-toggle')
+
         with gr.Row(elem_id='search-row'):
             search = gr.Textbox(label='Search Chinese or English', placeholder='Search Chinese or English…',
                                 lines=1, max_lines=1, show_label=False, container=False, scale=5, min_width=140, elem_id='search-box')
@@ -223,17 +224,6 @@ def build_app():
             lookup_groups = [gr.Radio(choices=[], value=None, label=f'Tone {i+1}', interactive=True, visible=False,elem_id=f'lookup-tone-{i+1}') for i in range(5)]
             more_results = gr.Button('More matches', visible=False, variant='secondary')
         english_button = gr.Button('Translate English online', visible=False)
-        with gr.Column(visible=False, elem_id='settings-panel') as settings:
-            gr.Markdown(dictionary_status().message, elem_classes='microcopy')
-            gr.Markdown('### Make it sound like you\nNatural voice sends the selected text to an online speech service only when you tap Listen.')
-            voice = gr.Radio([('Female', DEFAULT_VOICE), ('Male', 'zh-CN-YunxiNeural')], value=DEFAULT_VOICE, label='Mandarin voice')
-            speed = gr.Radio([('0.75×', .75), ('1×', 1.), ('1.25×', 1.25)], value=1., label='Speed')
-            mode = gr.Radio(['Natural voice (online)', 'Browser voice'], value='Natural voice (online)', label='Playback')
-            use_asr = gr.Checkbox(False, label='Also transcribe isolated-syllable attempts (optional)')
-            prepare_asr_button = gr.Button('Prepare Mandarin speech model (~75 MB)', variant='secondary')
-            gr.Markdown('Pitch coaching is experimental and only evaluates one isolated syllable. It does not detect phoneme errors.\n\n'
-                        'Saved vocabulary is stored on this host, shared across authenticated sessions. It is not cloud sync.', elem_classes='microcopy')
-
         with gr.Column() as scan_view:
             gr.HTML('<section class="welcome-panel">' +
                     _heading('YOUR NEXT LITTLE DISCOVERY', 'Chinese is everywhere.', 'Snap a sign, find its meaning, then say it out loud.') +
@@ -263,9 +253,9 @@ def build_app():
             gr.HTML(_heading('FROM YOUR VOICE', 'Say something in Chinese.', 'Turn a recording into a phrase to explore.'))
             with gr.Column(elem_classes='surface'):
                 speech_input = gr.Audio(sources=['microphone','upload'], type='numpy', format='wav', label='Record a Chinese phrase')
-                transcribe_button = gr.Button('Transcribe recording', variant='secondary')
-                asr_status = gr.Markdown('Mandarin transcription runs locally after a one-time speech model download. Use Prepare Mandarin speech model in Settings.', elem_classes='microcopy')
-                spoken_text = gr.Textbox(label='Check your transcript', lines=2)
+                transcribe_button = gr.Button('Use my recording', variant='secondary')
+                asr_status = gr.Markdown('Say a short phrase, then use your recording.', elem_classes='microcopy')
+                spoken_text = gr.Textbox(label='Recognized Chinese', lines=2, interactive=False)
                 use_text = gr.Button('Use this text', variant='primary')
 
         with gr.Column(visible=False) as saved_view:
@@ -280,28 +270,33 @@ def build_app():
                 gr.Markdown('Stored on this host. Shared by anyone signed in to this demo; not per-user cloud sync.', elem_classes='microcopy')
 
         with gr.Column(visible=False, elem_id='lesson') as lesson_view:
-            back_to_input = gr.Button('← New phrase', size='sm', scale=0, min_width=0, elem_id='new-phrase')
-            gr.HTML('<div class="screen-heading" id="lesson-heading"><p class="eyebrow">A PHRASE, A LITTLE POSSIBILITY</p>'
-                    '<h2>Let’s learn this phrase</h2></div>')
-            characters = gr.Radio(choices=[], value=None, label='Characters and pinyin', show_label=False,
-                                  interactive=True, container=False, elem_id='character-choices')
-            gr.Markdown('Tap a character or its pinyin to practise. Colour shows the spoken tone.', elem_id='tone-legend')
+            back_to_input = gr.Button('← Back', size='sm', scale=0, min_width=0, elem_id='new-phrase')
+            with gr.Column() as reading_view:
+                gr.HTML('<div class="screen-heading" id="lesson-heading"><p class="eyebrow">A PHRASE, A LITTLE POSSIBILITY</p>'
+                        '<h2>Let’s learn this phrase</h2></div>')
+                characters = gr.Radio(choices=[], value=None, label='Characters and pinyin', show_label=False,
+                                      interactive=True, container=False, elem_id='character-choices')
+                gr.Markdown('Tap a character or its pinyin to practise. Colour shows the spoken tone.', elem_id='tone-legend')
             with gr.Column() as phrase_info:
                 with gr.Column(elem_classes='surface'):
-                    meaning = gr.Textbox(label='English meaning (editable)', show_label=False, container=False, lines=2, elem_id='meaning')
+                    meaning = gr.Textbox(label='English translation', show_label=False, container=False, lines=2, interactive=False, elem_id='meaning')
                     meaning_note = gr.Markdown('', elem_id='meaning-note')
                     with gr.Row():
-                        listen_phrase = gr.Button('Listen to phrase', variant='primary')
-                        save_phrase = gr.Button('☆ Save phrase', variant='secondary')
+                        listen_phrase = gr.Button('Listen to phrase', min_width=0, variant='primary')
+                        save_phrase = gr.Button('☆ Save phrase', min_width=0, variant='secondary')
                     whole_button = gr.Button('Try the whole phrase', variant='secondary')
-                    with gr.Accordion('Edit text & translate', open=False):
+                    translate_button = gr.Button('Translate full sentence', variant='secondary')
+                    with gr.Accordion('Voice & speed', open=False, elem_classes='voice-options'):
+                        voice = gr.Radio([('Female', DEFAULT_VOICE), ('Male', 'zh-CN-YunxiNeural')],value=DEFAULT_VOICE,label='Voice')
+                        speed = gr.Radio([('0.75×',.75),('1×',1.),('1.25×',1.25)],value=1.,label='Speed')
+                        mode = gr.Radio(['Natural voice (online)','Browser voice'],value='Natural voice (online)',label='Playback')
+                    with gr.Accordion('Change Chinese text', open=False,visible=False):
                         editor = gr.Textbox(label='Chinese text (editable)', lines=3)
                         update_button = gr.Button('Update phrase', variant='secondary')
-                        gr.Markdown('Online translation sends this phrase to an external provider only when clicked.', elem_classes='microcopy')
-                        translate_button = gr.Button('Translate phrase online', variant='secondary')
-                gr.Markdown('#### A few words to know', elem_id='vocab-heading')
-                vocabulary = gr.HTML('')
-                with gr.Accordion('Keep a word', open=False):
+                        gr.Markdown('Learning may use an online service for the full English translation.', elem_classes='microcopy')
+                with gr.Accordion('Words in this phrase',open=False):
+                    gr.Markdown('#### A few words to know', elem_id='vocab-heading')
+                    vocabulary = gr.HTML('')
                     word_choice = gr.Dropdown(choices=[], label='Word from this phrase', interactive=True, allow_custom_value=True)
                     word_meaning = gr.Textbox(label='Word meaning (editable)')
                     save_word = gr.Button('☆ Save word', variant='secondary')
@@ -309,44 +304,47 @@ def build_app():
             with gr.Column(visible=False) as focus_view:
                 focus_card = gr.HTML('', elem_id='spotlight-card')
                 current_speech = gr.Textbox(visible=False)
-                with gr.Row():
-                    listen_character = gr.Button('Listen', variant='primary')
-                    try_button = gr.Button('Try it', variant='secondary')
+                with gr.Row() as focus_actions:
+                    listen_character = gr.Button('Listen', min_width=0, variant='primary')
+                    try_button = gr.Button('Try it', min_width=0, variant='secondary')
                 with gr.Column(visible=False, elem_classes='surface') as recording_view:
+                    mini_target = gr.HTML('',elem_id='mini-target')
                     recording = gr.Audio(sources=['microphone','upload'], type='numpy', format='wav', label='Say this syllable', elem_id='practice-recording')
                     check_button = gr.Button('Check my tone', variant='primary')
                     feedback = gr.Markdown('', elem_id='feedback')
                     retry_button = gr.Button('Try again', variant='secondary')
-                    with gr.Accordion('Pitch detail', open=False):
+                    with gr.Column(visible=False):
                         chart = gr.Plot(label='Measured pitch and schematic target')
                         transcript = gr.Textbox(label='Optional transcript · not a pronunciation grade', interactive=False)
                         gr.Markdown('A pitch shape cannot independently verify consonants or vowels.', elem_classes='microcopy')
                 with gr.Row():
-                    back_to_phrase = gr.Button('Back to phrase', variant='secondary')
-                    next_button = gr.Button('Next character', variant='secondary')
+                    back_to_phrase = gr.Button('Back to phrase', min_width=0, variant='secondary')
+                    next_button = gr.Button('Next character', min_width=0, variant='secondary')
                 star_character = gr.Button('☆ Save this character', size='sm')
 
             with gr.Column(visible=False, elem_classes='surface') as whole_view:
-                gr.Markdown('### Try the whole phrase\nListen, record, then play your recording back. Choose any character above to work on its tone.')
-                listen_whole = gr.Button('Listen to full phrase', variant='primary')
-                whole_recording = gr.Audio(sources=['microphone','upload'], type='numpy', format='wav', label='Record my attempt', elem_id='whole-recording')
-                review_button = gr.Button('Review recording', variant='secondary')
-                whole_feedback = gr.Markdown('Transcription compares words, not tones. Recordings stay local.', elem_classes='microcopy')
-                whole_prepare = gr.Button('Prepare Mandarin speech model (~75 MB)', variant='secondary')
-                heard_text = gr.Textbox(label='I heard · inspect and edit the transcript',lines=2,elem_id='heard-transcript')
-                compare_button = gr.Button('Compare corrected transcript',variant='secondary')
+                whole_target = gr.Markdown('### Try the whole phrase')
+                with gr.Column() as whole_capture:
+                    listen_whole = gr.Button('Listen to full phrase', variant='primary')
+                    whole_recording = gr.Audio(sources=['microphone','upload'], type='numpy', format='wav', label='Record my attempt', elem_id='whole-recording')
+                    review_button = gr.Button('Review recording', variant='secondary')
+                    whole_feedback = gr.Markdown('Transcription compares words, not tones. Recordings stay local.', elem_classes='microcopy')
+                whole_prepare = gr.Button('Prepare Mandarin speech model (~75 MB)', variant='secondary',visible=False)
+                heard_text = gr.State('')
+                compare_button = gr.Button('Compare corrected transcript',variant='secondary',visible=False)
                 comparison = gr.HTML('')
-                flagged_characters = gr.Radio(choices=[],label='Possible word differences · tap a character to practise',interactive=True,visible=False,elem_id='word-differences')
+                flagged_characters = gr.Radio(choices=[],label='Words to try again · tap one',interactive=True,visible=False,elem_id='word-differences')
+                record_again = gr.Button('Record again',visible=False,variant='secondary')
                 with gr.Row():
                     finish_button = gr.Button('Finish practice', variant='primary')
-                    whole_back = gr.Button('Back to phrase', variant='secondary')
+                    whole_back = gr.Button('Back to phrase', min_width=0, variant='secondary')
 
             with gr.Column(visible=False) as completion_view:
                 gr.HTML('<div class="completion"><div class="seal" aria-hidden="true">✓</div><h2>Nice practice session!</h2><p>Want to save this phrase?</p></div>')
-                complete_save = gr.Button('☆ Save phrase', variant='primary')
+                complete_save = gr.Button('☆ Save phrase', min_width=0, variant='primary')
                 with gr.Row():
-                    again_button = gr.Button('Practice again', variant='secondary')
-                    done_button = gr.Button('Done', variant='secondary')
+                    again_button = gr.Button('Practice again', min_width=0, variant='secondary')
+                    done_button = gr.Button('Done', min_width=0, variant='secondary')
 
             reference_audio = gr.Audio(label='Mandarin reference', interactive=False, autoplay=True, visible=False)
             voice_status = gr.Markdown('', elem_classes='microcopy')
@@ -360,7 +358,7 @@ def build_app():
 
 
         # A single transition target keeps input methods and result state consistent.
-        lesson_outputs = [phrase, lesson_reading, selected, lookup_view, active_saved, origin, editor, characters,
+        lesson_outputs = [stage,reading_view,focus_actions,mini_target,whole_target,whole_capture,record_again,translate_button,phrase, lesson_reading, selected, lookup_view, active_saved, origin, editor, characters,
                           meaning, meaning_note, vocabulary, word_choice, word_meaning, lesson_view,
                           scan_view, type_view, speak_view, saved_view, phrase_info, focus_view,
                           recording_view, whole_view, completion_view, focus_card, current_speech,
@@ -368,7 +366,7 @@ def build_app():
                           fallback_text, notice, english_button, search, whole_recording, whole_feedback, heard_text, comparison, flagged_characters, *nav_buttons.values()]
 
         def show_phrase():
-            return {phrase_info:gr.update(visible=True), focus_view:gr.update(visible=False),
+            return {stage:'results',lesson_view:gr.update(visible=True,elem_classes=['stage-results']),reading_view:gr.update(visible=True),focus_card:gr.update(visible=True),focus_actions:gr.update(visible=True),phrase_info:gr.update(visible=True), focus_view:gr.update(visible=False),
                     recording_view:gr.update(visible=False), whole_view:gr.update(visible=False),
                     completion_view:gr.update(visible=False), characters:gr.update(value=None), selected:None,
                     recording:None, feedback:'', chart:None, transcript:'',
@@ -376,17 +374,17 @@ def build_app():
 
         def open_lesson(raw, source='Type', saved_id=None, supplied_meaning=None, reading=None, provenance=None):
             try:
-                data = prepare_lesson(raw, saved_id, supplied_meaning, reading, provenance)
+                data = prepare_lesson(raw, saved_id, supplied_meaning, reading, provenance,allow_online=True)
             except (ValueError, RuntimeError) as exc:
                 return {notice:_notice(str(exc)), english_button:gr.update(visible=bool((raw or '').strip()) and not clean_hanzi(raw)), search:raw or ''}
             values = show_phrase()
-            values.update({phrase:data['text'], lesson_reading:data['reading'], lookup_view:gr.update(visible=False), origin:source, editor:data['text'], active_saved:data['saved_id'],
+            values.update({translate_button:gr.update(visible=not data['note'].startswith('Full translation') and len(clean_hanzi(data['text']))>1),phrase:data['text'], lesson_reading:data['reading'], lookup_view:gr.update(visible=False), origin:source, editor:data['text'], active_saved:data['saved_id'],
                            characters:gr.update(choices=data['choices'], value=None),
                            meaning:data['meaning'], meaning_note:data['note'], vocabulary:data['vocabulary'],
                            word_choice:gr.update(choices=data['words'], value=None), word_meaning:'',
-                           lesson_view:gr.update(visible=True), scan_view:gr.update(visible=False),
+                           lesson_view:gr.update(visible=True,elem_classes=['stage-results']),whole_target:f'### {data["text"]}', scan_view:gr.update(visible=False),
                            type_view:gr.update(visible=False), speak_view:gr.update(visible=False), saved_view:gr.update(visible=False),
-                           notice:'', english_button:gr.update(visible=False), whole_recording:None, whole_feedback:'Transcription compares words, not tones. Recordings stay local.', heard_text:'', comparison:'', flagged_characters:gr.update(choices=[],value=None,visible=False)})
+                           notice:'', english_button:gr.update(visible=False), whole_recording:None, whole_feedback:'Listen, record, then check what we heard.', heard_text:'', comparison:'', flagged_characters:gr.update(choices=[],value=None,visible=False)})
             values.update(nav_state(source))
             return values
 
@@ -414,7 +412,7 @@ def build_app():
             except ValueError as exc:
                 return {notice:_notice(str(exc))}
             candidates={c.key:c for group in result.groups for c in group}
-            values={lookup_view:gr.update(visible=True), lesson_view:gr.update(visible=False), scan_view:gr.update(visible=False),
+            values={lookup_view:gr.update(visible=True), lesson_view:gr.update(visible=False,elem_classes=['stage-input']), scan_view:gr.update(visible=False),
                     type_view:gr.update(visible=False),speak_view:gr.update(visible=False),saved_view:gr.update(visible=False),lookup_query:raw, lookup_page:page,
                     lookup_candidates:candidates, notice:'',
                     english_button:gr.update(visible=direction!='Pinyin lookup'),
@@ -455,7 +453,7 @@ def build_app():
             choice_update, cards, total = _library_view()
             values = {lookup_view:gr.update(visible=False), scan_view:gr.update(visible=destination=='Scan'), type_view:gr.update(visible=destination=='Type'),
                     speak_view:gr.update(visible=destination=='Speak'), saved_view:gr.update(visible=destination=='Saved'),
-                    lesson_view:gr.update(visible=False), notice:'', english_button:gr.update(visible=False),
+                    lesson_view:gr.update(visible=False,elem_classes=['stage-input']), notice:'', english_button:gr.update(visible=False),
                     saved_choice:choice_update, saved_cards:cards, saved_total:total,
                     reference_audio:gr.update(value=None, visible=False), voice_status:'', fallback_text:''}
             values.update(nav_state(destination))
@@ -470,7 +468,7 @@ def build_app():
             except (TypeError, ValueError):
                 return show_phrase()
             html, spoken = _target_panel(text, str(position), reading)
-            return {characters:gr.update(value=choices[position][1]), selected:str(position), focus_card:html, current_speech:spoken,
+            return {stage:'focus',lesson_view:gr.update(visible=True,elem_classes=['stage-focus']),reading_view:gr.update(visible=True),focus_actions:gr.update(visible=True),characters:gr.update(value=choices[position][1]), selected:str(position), focus_card:gr.update(value=html,visible=True), current_speech:spoken,
                     phrase_info:gr.update(visible=False), focus_view:gr.update(visible=True),
                     recording_view:gr.update(visible=False), whole_view:gr.update(visible=False), completion_view:gr.update(visible=False),
                     recording:None, feedback:'', chart:None, transcript:'', notice:'',
@@ -478,7 +476,7 @@ def build_app():
 
         def complete():
             values = show_phrase()
-            values.update({phrase_info:gr.update(visible=False), completion_view:gr.update(visible=True)})
+            values.update({stage:'complete',lesson_view:gr.update(visible=True,elem_classes=['stage-complete']),reading_view:gr.update(visible=False),phrase_info:gr.update(visible=False), completion_view:gr.update(visible=True)})
             return values
 
         def next_character(text, index, reading=None):
@@ -492,7 +490,6 @@ def build_app():
             try:
                 item = save_entry(kind, clean_hanzi(text), gloss,reading=reading)
                 choice_update, cards, total = _library_view()
-                gr.Info(f'Saved {item.hanzi} to Starred.')
                 values = {notice:_notice(f'Saved {item.hanzi} to Starred.'), saved_choice:choice_update, saved_cards:cards, saved_total:total}
                 if kind == 'sentence':
                     values[active_saved] = str(item.id)
@@ -527,7 +524,8 @@ def build_app():
             return {notice:_notice('Star removed.'), saved_choice:choice_update, saved_cards:cards, saved_total:total}
 
         def translate(text, previous):
-            return _translate_phrase(text,previous)
+            result=sentence_translation(text,allow_online=True)
+            return result.text,result.source,''
 
         async def listen(text, reference_voice, playback_speed, playback_mode):
             path, message, browser_text = await _listen(text, reference_voice, playback_speed, playback_mode)
@@ -535,7 +533,7 @@ def build_app():
 
         def whole_practice():
             values = show_phrase()
-            values.update({phrase_info:gr.update(visible=False), whole_view:gr.update(visible=True)})
+            values.update({whole_capture:gr.update(visible=True),whole_target:gr.update(visible=True),record_again:gr.update(visible=False),comparison:'',flagged_characters:gr.update(choices=[],value=None,visible=False),whole_recording:None,stage:'whole',lesson_view:gr.update(visible=True,elem_classes=['stage-whole']),reading_view:gr.update(visible=False),phrase_info:gr.update(visible=False), whole_view:gr.update(visible=True)})
             return values
 
         def compare_words(text,heard):
@@ -547,29 +545,36 @@ def build_app():
 
         def review_whole(audio,text):
             if audio is None:
-                return '', 'Record your attempt first. You can play it back and choose a character to practise.', '', gr.update(choices=[],value=None,visible=False)
+                return '', 'Record your attempt first. You can play it back and choose a character to practise.', '', gr.update(choices=[],value=None,visible=False),gr.update(visible=True),gr.update(visible=True),gr.update(visible=False),'whole'
             heard,message=_transcribe(audio)
             if not heard:
-                return '',message,'',gr.update(choices=[],value=None,visible=False)
+                return '',message,'',gr.update(choices=[],value=None,visible=False),gr.update(visible=True),gr.update(visible=True),gr.update(visible=False),'whole'
             html,choices=compare_words(text,heard)
-            return heard,message,html,choices
+            return heard,message,html,choices,gr.update(visible=False),gr.update(visible=False),gr.update(visible=True),'whole-feedback'
 
-        def prepare_speech():
-            yield 'Preparing the local Mandarin model. The first download is about 75 MB; no recording is uploaded.', 'Preparing Mandarin speech model…'
-            try:
-                prepare_model()
-                yield 'Mandarin model is ready. Record a phrase and transcribe it.', 'Mandarin model is ready. Record your attempt, then Review recording.'
-            except RuntimeError as exc:
-                yield str(exc),str(exc)
+        def start_recording(text,index,reading):
+            values=focus(text,index,reading)
+            syllables=get_syllables(text,reading)
+            selected_syllable=syllables[int(index)]
+            values.update({stage:'record',lesson_view:gr.update(visible=True,elem_classes=['stage-record']),
+                           reading_view:gr.update(visible=False),focus_card:gr.update(visible=False),focus_actions:gr.update(visible=False),
+                           recording_view:gr.update(visible=True),mini_target:f'<b>{escape(selected_syllable.hanzi)}</b> · {escape(selected_syllable.spoken_pinyin)}'})
+            return values
+
+        def back(current,source,text,index,reading):
+            if current=='results': return navigate(source)
+            if current=='record': return focus(text,index,reading)
+            if current=='whole-feedback': return whole_practice()
+            return show_phrase()
 
         route_outputs = [lookup_view,scan_view,type_view,speak_view,saved_view,lesson_view,notice,english_button,*nav_buttons.values(),saved_choice,saved_cards,saved_total,reference_audio,voice_status,fallback_text]
-        focus_outputs = [characters,selected,focus_card,current_speech,phrase_info,focus_view,recording_view,whole_view,completion_view,recording,feedback,chart,transcript,notice,reference_audio,voice_status,fallback_text]
+        focus_outputs = [whole_capture,whole_target,record_again,comparison,flagged_characters,whole_recording,stage,lesson_view,reading_view,focus_actions,mini_target,characters,selected,focus_card,current_speech,phrase_info,focus_view,recording_view,whole_view,completion_view,recording,feedback,chart,transcript,notice,reference_audio,voice_status,fallback_text]
         save_outputs = [notice,saved_choice,saved_cards,saved_total,active_saved]
-        settings_toggle.click(lambda opened:(not opened, gr.update(visible=not opened)), inputs=settings_open, outputs=[settings_open,settings])
         for destination, button in nav_buttons.items():
             button.click(lambda dest=destination:navigate(dest), outputs=route_outputs)
         type_shortcut.click(lambda:navigate('Type'), outputs=route_outputs)
-        back_to_input.click(navigate, inputs=origin, outputs=route_outputs)
+        stage_events=[]
+        stage_events.append(back_to_input.click(back,inputs=[stage,origin,phrase,selected,lesson_reading],outputs=list(dict.fromkeys(route_outputs+focus_outputs))))
         lookup_outputs = lesson_outputs + [lookup_summary,lookup_candidates,lookup_query,lookup_page,more_results,search_mode,*lookup_groups]
         more_results.click(lambda query,direction,page:lookup(query,direction,page+1), inputs=[lookup_query,search_mode,lookup_page], outputs=lookup_outputs)
         for group in lookup_groups:
@@ -588,24 +593,23 @@ def build_app():
         opening_events.append(use_text.click(lambda text:open_lesson(text,'Speak'), inputs=spoken_text, outputs=lesson_outputs))
         focus_event = characters.input(focus, inputs=[phrase,characters,lesson_reading], outputs=focus_outputs)
         focus_event.then(fn=None, inputs=None, outputs=None, js="""() => {
-            document.getElementById('character-choices')?.scrollIntoView({
+            document.getElementById('lesson')?.scrollIntoView({
                 behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block:'start'});
         }""")
-        next_button.click(next_character, inputs=[phrase,selected,lesson_reading], outputs=focus_outputs)
-        back_to_phrase.click(show_phrase, outputs=focus_outputs)
-        whole_back.click(show_phrase, outputs=focus_outputs)
-        whole_button.click(whole_practice, outputs=focus_outputs)
-        try_button.click(lambda:gr.update(visible=True), outputs=recording_view)
+        stage_events.append(next_button.click(next_character, inputs=[phrase,selected,lesson_reading], outputs=focus_outputs))
+        stage_events.append(back_to_phrase.click(show_phrase, outputs=focus_outputs))
+        stage_events.append(whole_back.click(show_phrase, outputs=focus_outputs))
+        stage_events.append(whole_button.click(whole_practice, outputs=focus_outputs))
+        stage_events.append(try_button.click(start_recording,inputs=[phrase,selected,lesson_reading],outputs=focus_outputs))
         check_button.click(_assess_and_track, inputs=[recording,phrase,selected,use_asr,active_saved,lesson_reading], outputs=[feedback,chart,transcript])
         retry_button.click(lambda:(None,'Ready when you are. Record one clear syllable.',None,''), outputs=[recording,feedback,chart,transcript])
-        review_button.click(review_whole, inputs=[whole_recording,phrase], outputs=[heard_text,whole_feedback,comparison,flagged_characters])
+        review_button.click(review_whole, inputs=[whole_recording,phrase], outputs=[heard_text,whole_feedback,comparison,flagged_characters,whole_capture,whole_target,record_again,stage])
+        stage_events.append(record_again.click(whole_practice,outputs=focus_outputs))
         compare_button.click(compare_words, inputs=[phrase,heard_text], outputs=[comparison,flagged_characters])
-        flagged_characters.input(focus, inputs=[phrase,flagged_characters,lesson_reading], outputs=focus_outputs)
-        for button in (prepare_asr_button,whole_prepare):
-            button.click(prepare_speech,inputs=None,outputs=[asr_status,whole_feedback])
-        finish_button.click(complete, outputs=focus_outputs)
-        done_button.click(show_phrase, outputs=focus_outputs)
-        again_button.click(lambda text,reading:focus(text,'0',reading), inputs=[phrase,lesson_reading], outputs=focus_outputs)
+        stage_events.append(flagged_characters.input(focus, inputs=[phrase,flagged_characters,lesson_reading], outputs=focus_outputs))
+        stage_events.append(finish_button.click(complete, outputs=focus_outputs))
+        stage_events.append(done_button.click(show_phrase, outputs=focus_outputs))
+        stage_events.append(again_button.click(lambda text,reading:focus(text,'0',reading), inputs=[phrase,lesson_reading], outputs=focus_outputs))
         translate_button.click(translate, inputs=[phrase,meaning], outputs=[meaning,meaning_note,notice])
         word_choice.input(lambda word:meaning_for(word or ''), inputs=word_choice, outputs=word_meaning)
         save_word.click(keep_word, inputs=[phrase,word_choice,word_meaning], outputs=save_outputs)
@@ -618,13 +622,27 @@ def build_app():
         for button, text in ((listen_phrase,phrase),(listen_character,current_speech),(listen_whole,phrase)):
             event = button.click(listen, inputs=[text,voice,speed,mode], outputs=[reference_audio,voice_status,fallback_text])
             event.then(fn=None, inputs=[fallback_text,speed,voice_status], outputs=voice_status, js=BROWSER_SPEECH)
-        for event in opening_events:
+        for event in opening_events + stage_events:
             event.then(fn=None, inputs=None, outputs=None, js="""() => {
                 const lesson = document.getElementById('lesson');
                 if (lesson && lesson.getClientRects().length) lesson.scrollIntoView({
                     behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block:'start'});
             }""")
     return demo
+
+
+def make_theme():
+    theme=gr.themes.Soft(primary_hue='orange',secondary_hue='stone',neutral_hue='stone',
+                         font=['Inter','ui-sans-serif','system-ui']).set(
+        body_background_fill='#fffaf0',body_text_color='#17364c',body_text_color_subdued='#4b6473',
+        background_fill_primary='#fffaf0',background_fill_secondary='#ffffff',
+        block_background_fill='#ffffff',block_label_background_fill='#fff4df',
+        block_label_text_color='#17364c',block_title_text_color='#17364c',
+        input_background_fill='#ffffff',color_accent='#ff950a')
+    values=theme.to_dict()['theme']
+    # Match every dark token to its light counterpart, including built-in audio.
+    mirrored={key:values[key[:-5]] for key in values if key.endswith('_dark') and key[:-5] in values}
+    return theme.set(**mirrored)
 
 
 def launch_app():
@@ -639,12 +657,7 @@ def launch_app():
     print(dictionary_status().message, flush=True)
     return build_app().launch(server_name=host, server_port=int(os.environ.get('PORT','7860')), share=share,
                               auth=(username,password) if remote else None, inbrowser=not share, show_error=True,
-                              theme=gr.themes.Soft(primary_hue='orange', secondary_hue='stone', neutral_hue='stone',
-                                                   font=['Inter','ui-sans-serif','system-ui']).set(
-                                  color_accent='#dc644c', color_accent_soft='#f9e6db',
-                                  body_background_fill='#faf7f2', block_background_fill='#fffdfa',
-                                  input_background_fill='#fffdfa', block_label_background_fill='#fffdfa',
-                                  block_label_text_color='#78675a'), css=CSS)
+                              theme=make_theme(), css=CSS)
 
 
 if __name__ == '__main__':

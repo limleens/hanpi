@@ -72,7 +72,10 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     await button('Listen to phrase').waitFor();
     await page.waitForFunction(() => document.querySelectorAll('#character-choices label').length === 5);
     assert.match(await page.locator('#meaning textarea').inputValue(), /coffee/);
+    await page.getByText('Words in this phrase',{exact:true}).click();
+    await page.locator('.vocab').first().waitFor();
     assert.equal(await page.locator('.vocab').count(), 3);
+    await page.getByText('Words in this phrase',{exact:true}).click();
     const toneColors = await page.locator('#character-choices label').evaluateAll(xs => xs.map(x => getComputedStyle(x).color));
     assert.notEqual(toneColors[0], toneColors[2], 'Third and first tones need different colours');
     const clipped = await page.locator('#character-choices label').evaluateAll(xs=>xs.some(x=>{const label=x.getBoundingClientRect(),text=x.querySelector('span').getBoundingClientRect();return text.left<label.left || text.right>label.right}));
@@ -80,10 +83,10 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     await snapshot('mobile-results');
     console.log('PASS real OCR -> shared Results, pinyin, word gloss and vocabulary');
 
-    await button('Settings').click();
+    await page.getByText('Voice & speed',{exact:true}).click();
     await page.getByText('Browser voice', {exact:true}).click();
     await page.getByText('1.25×', {exact:true}).click();
-    await button('Settings').click();
+    await page.getByText('Voice & speed',{exact:true}).click();
     await button('Listen to phrase').click();
     await page.waitForFunction(() => window.__spoken.length === 1);
     assert.deepEqual(await page.evaluate(() => window.__spoken[0]), {text:'我喜欢咖啡', rate:1.25, lang:'zh-CN'});
@@ -97,7 +100,7 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     await snapshot('mobile-spotlight');
     await button('Try it').click();
     await button('Check my tone').click();
-    await page.locator('#feedback').filter({hasText:"Couldn't judge"}).waitFor();
+    await page.locator('#feedback').filter({hasText:'clearer sound'}).waitFor();
     await button('Try again').click();
     await page.locator('#feedback').filter({hasText:'Ready when you are'}).waitFor();
     await button('Next character').click();
@@ -114,6 +117,7 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     console.log('PASS all 60 typed characters retained');
 
     const search = page.getByRole('textbox', {name:'Search Chinese or English', exact:true});
+    if(!await search.isVisible()) await button('← Back').click();
     await search.fill('coffee'); await search.press('Enter');
     await button('Translate English online').waitFor();
     await page.locator('#lookup-results').waitFor();
@@ -122,6 +126,7 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     await button('Listen to phrase').waitFor();
     console.log('PASS English search uses offline candidates; online translation remains opt-in');
 
+    if(!await search.isVisible()) await button('← Back').click();
     await search.fill('骂'); await search.press('Enter');
     await page.waitForFunction(() => document.querySelectorAll('#character-choices label').length === 1);
     await button('☆ Save phrase').click();
@@ -161,7 +166,7 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     console.log('PASS save, matching practice counter, reload persistence, reopen and remove');
 
     await navigate('Speak');
-    await button('Transcribe recording').click();
+    await button('Use my recording').click();
     await page.getByText('Record a phrase first, then transcribe it.', {exact:true}).waitFor();
     await button('Use this text').click();
     await page.locator('#notice').getByRole('status').filter({hasText:'Enter Chinese text'}).waitFor();

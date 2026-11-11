@@ -22,7 +22,7 @@ The running Gradio server should print a temporary **https://...gradio.live** UR
 - Sign in, then use the **Camera** source on the photo card to take a picture of Hanzi. Alternatively choose Upload to select a photo from your library.
 - Allow camera/microphone permissions in Safari when prompted.
 - Tap **Recognize characters**, verify/edit the proposed Chinese text, and tap **Use verified text** to open Results.
-- Tap a character/pinyin to open Spotlight, then **Listen** and **Try it**. Record an isolated syllable and tap **Check my tone**. Settings selects Female/Male natural voice, speed, or browser speech; network failure falls back to browser speech where available.
+- Tap a character/pinyin to open Spotlight, then **Listen** and **Try it**. Record an isolated syllable and tap **Check my tone**. Inline Voice & speed selects Female/Male natural voice, speed, or browser speech; network failure falls back to browser speech where available.
 
 **Important:** Browser camera/microphone access requires a secure HTTPS origin outside localhost. Browser/speech behavior may vary across iOS versions.
 
@@ -76,7 +76,10 @@ The share link is temporary and depends on Gradio's external tunnel service. Kee
 1. Open the printed HTTPS share link in Safari; confirm login is required and sign in.
 2. Select **English → Chinese**, search `eat`, choose 吃. Select **Pinyin lookup**, search `ma3`, then `mǎ`; verify the third-tone choices.
 3. Scan your actual menu using the rear-camera control, allow permission, and verify/edit the proposed characters **before** pressing Use verified text. Try the original narrow red crop too.
-4. Type 我喜欢咖啡. Tap Listen, then Try the whole phrase; record once correctly and once with a different word. Review recording, inspect/edit “I heard”, and tap a flagged target character. Text differences can be ASR mistakes; they are not measured tone errors. For isolated tone coaching, record only the selected syllable.
-5. Test playback, save/reopen a phrase, and navigate all four tabs without sideways scrolling. If neural TTS is unavailable, choose Browser voice in Settings and check whether the device has a Mandarin voice.
+4. Type 我喜欢咖啡. Tap Listen, then Try the whole phrase; record once correctly and once with a different word. Review recording, inspect “What we heard”, and tap a flagged target character. Text differences can be ASR mistakes; they are not measured tone errors. For isolated tone coaching, record only the selected syllable.
+5. Test playback, save/reopen a phrase, and navigate all four tabs without sideways scrolling. If neural TTS is unavailable, choose Browser voice under Voice & speed and check whether the device has a Mandarin voice.
 
 This checklist is **not marked passed** by the automated desktop runs. Real camera/mic permissions, audible playback and Safari behavior require your phone. Avoid personal vocabulary in a shared demo; everyone authenticated to that instance uses the same host-local SQLite library.
+
+
+After pulling the final phone fix, stop the old process with Ctrl+C and run app.py again in the same PowerShell window. Use the **new** printed HTTPS link. Sharing/login environment variables and the prepared speech model remain available. The learning flow now separates Results, Spotlight, recording and feedback; the top Back button moves one stage back. Your phone’s browser chrome may remain dark; the app’s cards and text use a consistent light palette.

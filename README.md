@@ -54,14 +54,14 @@ Open http://127.0.0.1:7860 in the browser. The UI uses Gradio 6; no Node build o
 
 - **Scan**: upload, paste, drop an image, or select the rear-camera source. Tap **Recognize characters**, inspect/edit **Verify detected Chinese before learning**, then tap **Use verified text**. Recognition is a proposal, not a guarantee. Small crops are upscaled and contrast/red-text variants are tried. Original Traditional characters are preserved. Results can still be edited afterward.
 - **Type**: enter Chinese and tap **Learn this phrase**. The search bar has **Chinese → English**, **English → Chinese**, and **Pinyin lookup** modes. English `eat` returns selectable 吃 · chī offline. `ma` shows all written tones; `ma3` and `mǎ` select tone 3. **More matches** pages through remaining candidates. Unmarked/multi-syllable pinyin is not forced to one arbitrary reading. Online translation is an explicit optional enhancement; failures retain offline matches.
-- **Results**: explore aligned, tone-coloured Hanzi/pinyin, an editable meaning and key vocabulary. Offline meanings are clearly labelled dictionary definitions or approximate word glosses. Fluent online translation is opt-in under **Edit text & translate**.
+- **Results**: explore aligned, tone-coloured Hanzi/pinyin, an editable meaning and key vocabulary. Offline meanings are clearly labelled dictionary definitions or approximate word glosses. Full English translation appears directly: common phrases/menu items use the offline phrase cache, and other sentences try online providers. Any word-gloss fallback is clearly labelled.
 - **Spotlight**: tap a character or its pinyin (keyboard selection also works). Other characters dim. **Listen** uses natural Mandarin by default and falls back to browser speech if the service fails. Sandhi examples retain phrase context.
-- **Try it**: record/upload one isolated syllable, then **Check my tone**. Retry, advance to the next character, or return to the phrase. The pitch chart stays inside **Pitch detail**.
-- **Try the whole phrase**: listen to the target, record, then **Review recording** to transcribe locally. Expected text and **I heard** appear together. Possible substitutions/omissions are highlighted; tap a flagged target character to open Spotlight. Edit an incorrect transcript and **Compare corrected transcript**. Punctuation and Simplified/Traditional forms are ignored only for alignment; original text is retained. ASR can mishear: text differences are not detected tone/consonant errors. Finish with **Save phrase**, **Practice again**, or **Done**.
-- **Speak**: the same local Mandarin model produces editable Chinese that opens Results. Prepare it once with `python scripts/prepare_asr.py` or **Prepare Mandarin speech model (~75 MB)** in Settings/whole-phrase practice. After preparation, recognition needs no network, GPU or paid API. If unavailable, playback and manual Spotlight remain usable with an actionable error.
+- **Try it**: record/upload one isolated syllable, then **Check my tone**. Retry, advance to the next character, or return to the phrase. Feedback stays short and encouraging; technical pitch plots are hidden from the normal flow.
+- **Try the whole phrase**: listen to the target, record, then **Review recording** to transcribe locally. Expected text and **I heard** appear together. Possible substitutions/omissions are highlighted; tap a flagged target character to open Spotlight. Inspect **What we heard**; sound-alike spellings are treated cautiously instead of being marked as definite mistakes. Punctuation and Simplified/Traditional forms are ignored only for alignment; original text is retained. ASR can mishear: text differences are not detected tone/consonant errors. Finish with **Save phrase**, **Practice again**, or **Done**.
+- **Speak**: the same local Mandarin model produces editable Chinese that opens Results. Prepare it once with `python scripts/prepare_asr.py` before launching the demo. After preparation, recognition needs no network, GPU or paid API. If unavailable, playback and manual Spotlight remain usable with an actionable error.
 - **Saved**: reopen a saved item for practice or remove its star. You can also keep a word or a selected character.
 
-**Settings** groups Female/Male neural voices, 0.75×/1×/1.25× speed, browser-voice preference, and optional practice transcription. Settings persist while navigating within the current session. The transcription checkbox only controls the optional isolated-syllable transcript; whole-sentence Review always attempts ASR. Nothing generates online speech before you tap Listen.
+**Voice & speed** is a small inline section on the Results page, with Female/Male, 0.75×/1×/1.25× and browser fallback. There is no separate Settings screen or transcript-edit/setup panel. Settings persist while navigating within the current session. Whole-sentence Review checks words automatically. Results, Spotlight, recording and feedback are separate stages; Back returns one stage and scrolls to its top. Nothing generates online speech before you tap Listen.
 
 The bottom navigation stays accessible on phones; desktop uses the same calm, centred layout. Animations respect reduced-motion preferences.
 
@@ -122,7 +122,7 @@ The code uses packages through their documented APIs, instead of pasting in othe
 
 ## Privacy
 
-OCR and pitch analysis run locally. The optional online translation button shares the selected Chinese text with a third-party translation provider only when clicked. Browser speech synthesis may use device or platform services. No user accounts or telemetry are part of this prototype.
+OCR, pitch analysis and Mandarin recognition run locally. Creating a lesson may send the selected Chinese text to Google Translate or MyMemory for a full English translation; common phrases/menu items use an offline phrase cache. Providers can be unavailable, in which case approximate word meanings are explicitly labelled. Browser speech synthesis may use device or platform services. No user accounts or telemetry are part of this prototype.
 
 
 ## Phone camera and natural Mandarin voice
@@ -131,8 +131,17 @@ The Gradio app is now phone-responsive and already accepts webcam/camera images,
 
 There are now **two reference voice choices**:
 - Natural voice (default): online [edge-tts](https://github.com/rany2/edge-tts) with Xiaoxiao (Female) or Yunxi (Male), configurable speed and an audio player. **Generated only when you tap Listen.** Selected text goes to a third-party service, which can fail or be unavailable.
-- Browser voice: choose it in Settings for device/platform Mandarin speech. It also serves as the fallback after a neural-service failure. Available Mandarin voices and audible playback depend on the device.
+- Browser voice: choose it under Voice & speed for device/platform Mandarin speech. It also serves as the fallback after a neural-service failure. Available Mandarin voices and audible playback depend on the device.
 
 Neural speech synthesis is not the same as speech transcription or automatic grading. Current pronunciation assessment still covers one isolated syllable at a time.
 
 **Mobile access isn't automatically active after installing Hanpi.** You must start the host server and open its HTTPS URL on your phone. For a permanent production site, add a hosted backend and independent user storage; the existing SQLite collection is shared by anyone authenticated to the same temporary demo.
+
+
+## Final phone-readability pass
+
+The app uses one readable light palette even when the phone requests dark mode. Recording and feedback are separate, compact stages; Back returns to the previous stage. Technical pitch charts, model-download controls and transcript editing are absent from the normal learning flow. Voice options remain inline.
+
+Full English translation appears directly in Results. For example, 蒜香爆燒肉 → “Stir-fried roast pork with garlic.” Common phrases/menu items work offline; other sentences try bounded online providers, then clearly label any word-gloss fallback. This does not imply an offline translation model for arbitrary sentences.
+
+Tone coaching accepts quieter/shorter recordings and a broader pitch range, fixes stereo PCM normalization, and uses encouraging feedback. Sound-alike ASR spellings are advisory, not definite word errors. These changes do not establish human pronunciation accuracy or turn uncertain audio into a successful grade.

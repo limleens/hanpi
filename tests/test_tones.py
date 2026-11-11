@@ -28,3 +28,16 @@ def test_silence():
 def test_missing_audio():
     with pytest.raises(ValueError, match="Record"):
         analyze_tone(None)
+
+
+def test_quiet_phone_recording_keeps_usable_contour():
+    sr,data=synth([-3,-2,-1,1,3])
+    out=analyze_tone((sr,data*.012))
+    assert out.detected==2
+
+
+def test_integer_stereo_recording_is_normalized_before_pitch():
+    sr,data=synth([3,1,-1,-3,-4])
+    pcm=(data*32767).astype(np.int16)
+    stereo=np.column_stack([pcm,pcm])
+    assert analyze_tone((sr,stereo)).detected==4

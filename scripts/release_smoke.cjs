@@ -13,15 +13,15 @@ fs.mkdirSync(output,{recursive:true});
  const page=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  const button=name=>page.getByRole('button',{name,exact:true});
- const mode=name=>page.locator('#search-mode').getByText(name,{exact:true});
- const query=async text=>{const input=page.getByRole('textbox',{name:'Search Chinese or English',exact:true});await input.fill(text);await button('Search').click();};
+ const selectMode=async name=>{if(!await page.locator('#search-mode').isVisible())await page.locator('#bottom-nav').getByRole('button',{name:'Type',exact:true}).click();await page.locator('#search-mode').getByText(name,{exact:true}).click();};
+ const query=async text=>{const input=page.getByRole('textbox',{name:'Search Chinese or English',exact:true});if(!await input.isVisible())await page.locator('#bottom-nav').getByRole('button',{name:'Type',exact:true}).click();await input.fill(text);await button('Search').click();};
  const snapshot=async name=>{
    await page.screenshot({path:path.join(output,name+'.png'),fullPage:true,animations:'disabled'});
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'horizontal overflow');
  };
  try{
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  await mode('English → Chinese').click();await query('eat');
+  await selectMode('English → Chinese');await query('eat');
   await page.locator('#lookup-results').waitFor();
   const first=page.locator('#lookup-tone-1 label').first();assert.match(await first.innerText(),/吃.*chī/);
   await snapshot('offline-eat');
@@ -32,7 +32,7 @@ fs.mkdirSync(output,{recursive:true});
   assert.match(await page.locator('#meaning textarea').inputValue(),/eat/);
   console.log('PASS eat offline, blocked online provider fallback, selectable Chinese lesson');
 
-  await mode('Pinyin lookup').click();await query('ma');
+  await selectMode('Pinyin lookup');await query('ma');
   for(let i=1;i<=5;i++) await page.locator('#lookup-tone-'+i).waitFor();
   for(const [tone,word] of [[1,'妈'],[2,'麻'],[3,'马'],[4,'骂'],[5,'吗']])
     assert.match(await page.locator('#lookup-tone-'+tone).innerText(),new RegExp(word));
@@ -44,9 +44,10 @@ fs.mkdirSync(output,{recursive:true});
   assert.match(await page.locator('.focus-pinyin').innerText(),/mǎ/);
   console.log('PASS tone-grouped ma, numbered pinyin, dictionary reading in Spotlight');
 
-  await mode('Chinese → English').click();await query('我喜欢咖啡');
+  await selectMode('Chinese → English');await query('我喜欢咖啡');
   await button('Listen to phrase').waitFor();
-  assert.equal(await page.locator('.vocab').count(),3);
+  await page.getByText('Words in this phrase',{exact:true}).click();await page.locator('.vocab').first().waitFor();
+  assert.equal(await page.locator('.vocab').count(),3);await page.getByText('Words in this phrase',{exact:true}).click();
   assert.match(await page.locator('#meaning textarea').inputValue(),/coffee/);
   console.log('PASS real offline dictionary segmentation and Chinese-to-English gloss');
 
@@ -67,9 +68,7 @@ fs.mkdirSync(output,{recursive:true});
   const recording=page.locator('#whole-recording');await recording.getByRole('button',{name:'Upload file',exact:true}).click();
   await recording.locator('input[type=file]').setInputFiles(speech);
   await button('Review recording').click();
-  const heard=page.locator('#heard-transcript textarea');
-  await page.waitForFunction(()=>document.querySelector('#heard-transcript textarea')?.value.length>10);
-  assert.equal(await heard.inputValue(),target);
+  await page.locator('.sentence-comparison').filter({hasText:target}).waitFor();
   await page.getByText('The transcript text matches the target. This does not verify pronunciation or tones.',{exact:true}).waitFor();
   const differentTarget=target.replace('介绍','说明');
   await query(differentTarget);await button('Try the whole phrase').click();
@@ -77,16 +76,16 @@ fs.mkdirSync(output,{recursive:true});
   await recording.locator('input[type=file]').setInputFiles(speech);
   await button('Review recording').click();
   await page.locator('#word-differences label').filter({hasText:'说'}).waitFor();
-  assert.equal(await heard.inputValue(),target);
+  assert.match(await page.locator('.sentence-comparison').innerText(),/对我做了介绍/);
   await snapshot('sentence-word-comparison');
   await page.locator('#word-differences label').filter({hasText:'说'}).click();await button('Try it').waitFor();
   assert.equal(await page.locator('.focus-hanzi').innerText(),'说');
   console.log('PASS real Mandarin recording -> local ASR -> matching and mismatching targets -> highlighted target Spotlight');
 
   await page.setViewportSize({width:1280,height:900});
-  await mode('English → Chinese').click();await query('coffee');await page.locator('#lookup-results').waitFor();await snapshot('desktop-lookup');
+  await selectMode('English → Chinese');await query('coffee');await page.locator('#lookup-results').waitFor();await snapshot('desktop-lookup');
   await page.setViewportSize({width:390,height:844});
-  await mode('Pinyin lookup').click();await query('mǎ');await page.waitForFunction(()=>document.querySelector('#lookup-results')?.innerText.includes('for mǎ.'));
+  await selectMode('Pinyin lookup');await query('mǎ');await page.waitForFunction(()=>document.querySelector('#lookup-results')?.innerText.includes('for mǎ.'));
   assert.match(await page.locator('#lookup-tone-3').innerText(),/马/);
   await snapshot('accented-pinyin');
   assert.deepEqual(errors,[]);

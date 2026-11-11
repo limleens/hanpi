@@ -596,3 +596,46 @@ footer { display: none !important; }
 .sentence-comparison p[lang] { font-size:24px; line-height:1.8; }
 .sentence-comparison .word-difference { color:#713c13; background:#ffe2a6; padding:2px; border-radius:5px; }
 #word-differences label { background:#fff0ce; border-color:#bb8036; }
+/* A single readable light palette, including devices whose OS requests dark mode. */
+.gradio-container, .dark .gradio-container {
+ --body-text-color:#17364c !important; --body-text-color-subdued:#4b6473 !important;
+ --body-background-fill:#fffaf0 !important; --background-fill-primary:#fffaf0 !important;
+ --background-fill-secondary:#ffffff !important; --block-background-fill:#ffffff !important;
+ --block-title-text-color:#17364c !important; --block-label-text-color:#17364c !important;
+ --block-label-background-fill:#fff4df !important; --input-background-fill:#ffffff !important;
+ --input-text-color:#17364c !important; --input-placeholder-color:#60727c !important;
+ --block-border-color:#ded5c6 !important; --input-border-color:#d9cfc0 !important;
+ --neutral-800:#17364c !important; --neutral-700:#37566a !important;
+}
+.gradio-container .prose :is(p,li,small,strong,em,h1,h2,h3,h4),
+.gradio-container .sentence-comparison, .gradio-container .sentence-comparison :is(p,h3,small) {color:#17364c !important;}
+.gradio-container :is(textarea,input[type=text],input[type=number]) {background:#ffffff !important; color:#17364c !important; -webkit-text-fill-color:#17364c !important;}
+.gradio-container :is(.gradio-audio,.gradio-textbox), #practice-recording, #whole-recording {background:#fff !important; color:#17364c !important;}
+#word-differences label, #word-differences label span {color:#17364c !important; background:#fff0ce !important;}
+.gradio-container .toast, .gradio-container [data-testid=toast-body] {background:#ffffff !important; color:#17364c !important;}
+#lesson.stage-record #character-choices, #lesson.stage-whole #character-choices {display:none !important;}
+body:has(#lesson:is(.stage-results,.stage-focus,.stage-record,.stage-whole,.stage-complete)) :is(#search-row,#search-mode,#brand) {display:none !important;}
+#lesson.stage-focus #character-choices > .wrap:not([data-testid=status-tracker]) {max-height:110px;}
+#lesson.stage-record .surface, #lesson.stage-whole.surface {padding:16px !important;}
+#lesson.stage-focus .spotlight {padding:17px 14px;}
+#lesson.stage-focus .focus-hanzi {font-size:64px;}
+#lesson.stage-focus .focus-pinyin {font-size:23px; margin-bottom:8px;}
+#lesson.stage-focus .spotlight h3 {margin:12px 0 7px; font-size:21px;}
+#lesson.stage-focus .tone-tip {font-size:12px;}
+#mini-target {text-align:center; font-size:23px; color:#17364c;}
+#lesson .sentence-comparison small {display:none;}
+#lesson .sentence-comparison p[lang] {font-size:20px; line-height:1.6;}
+#lesson .screen-heading {margin:5px 0 10px;}
+#lesson .screen-heading h2 {font-size:28px;}
+#lesson .surface {gap:11px !important; padding:17px !important;}
+#lesson .voice-options {background:#fff !important; border-radius:16px;}
+#character-choices:has(input:checked) label:not(:has(input:checked)) {opacity:.65;}
+#word-differences .wrap:not([data-testid=status-tracker]) {max-height:170px;overflow-y:auto;}
+[data-testid=toast-body] {background:#ffffff !important;color:#17364c !important;}
+#feedback:not(:has(p,h3)) {display:none !important;}
+@media(max-width:600px) {
+ #character-choices > .wrap:not([data-testid=status-tracker]) {gap:6px !important;padding:4px !important;max-height:160px;}
+ #character-choices label {width:60px !important;min-width:60px !important;min-height:78px;}
+ #character-choices label span::first-line {font-size:27px;}
+ #lesson button {min-width:0 !important;}
+}

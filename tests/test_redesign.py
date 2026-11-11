@@ -16,7 +16,7 @@ def test_shared_lesson_keeps_all_characters_and_dictionary_provenance():
     assert len(lesson['choices']) == 60
     assert lesson['text'] == '我喜欢咖啡' * 12
     assert 'coffee' in lesson['meaning']
-    assert 'not a fluent' in lesson['note']
+    assert 'approximate word meanings' in lesson['note']
     assert [word for _, word in lesson['words']][:3] == ['我', '喜欢', '咖啡']
 
 
@@ -57,14 +57,14 @@ def test_only_matching_isolated_tones_increment_saved_practice(monkeypatch, tmp_
     monkeypatch.setattr(app, 'analyze_tone', lambda audio: result)
     feedback, chart, _ = app._assess_and_track(object(), '骂', '0', False, saved.id)
     assert get_entry(saved.id).practice_count == expected_count
-    assert 'consonants' in feedback and 'whole-sentence' in feedback
+    assert 'not a pronunciation grade' in feedback
     assert '100%' not in feedback
     if detected is None:
-        assert "Couldn't judge" in feedback
+        assert "clearer sound" in feedback
     elif detected == 4:
         assert 'shape looks close' in feedback
     else:
-        assert "Let's shape" in feedback
+        assert "Good try" in feedback
 
 
 def test_invalid_selection_cannot_grade_the_last_character():
@@ -75,7 +75,7 @@ def test_invalid_selection_cannot_grade_the_last_character():
 
 def test_silent_or_missing_recording_is_not_a_success():
     feedback, chart, _ = app._assess(None, '骂', '0')
-    assert "Couldn't judge" in feedback and 'Record' in feedback
+    assert "clearer sound" in feedback and 'Record' in feedback
     assert chart is None
 
 

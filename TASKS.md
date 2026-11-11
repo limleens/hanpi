@@ -85,3 +85,14 @@ See `docs/REDESIGN_QA.md` for exact automated results and browser evidence. The 
 - [ ] User review of PR #2; do not merge automatically.
 
 See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and the existing navigation are preserved; this pass changes functionality, not visual design.
+
+
+## Final phone feedback pass · 11 November
+
+- [x] Reproduced the dark-OS/light-card mismatch; mirrored Gradio dark tokens and checked white audio cards/dark text in a dark-OS browser.
+- [x] Full sentence/menu translation shown directly, offline phrase cache plus bounded online providers with honest fallback labels.
+- [x] Inline voice options; removed visible Settings/model preparation/transcript-edit/pitch-debug controls.
+- [x] Separate Results / Spotlight / Record / sentence feedback stages, one-stage Back and automatic scroll-to-stage.
+- [x] More tolerant voiced-audio extraction, quieter/stereo recording regressions, gentle coaching, and cautious treatment of homophone ASR spellings without fake passes.
+- [x] 92 tests pass; dark-OS 390px browser checks menu translation, staged recording, real Mandarin ASR, Back navigation and removal of technical controls.
+- [ ] Recheck the updated build on the actual phone; the user confirmed phone launch and real-image OCR on the preceding build.

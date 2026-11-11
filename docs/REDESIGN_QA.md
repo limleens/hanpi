@@ -1,3 +1,11 @@
+# Final phone feedback validation
+
+- **92 tests passed**, including quieter stereo/phone-level synthetic tones, complete offline phrase/menu translation, unseen-sentence provider response, honest fallback labelling and homophone ASR handling.
+- Chromium at 390×844 with **dark OS preference**: white audio background (`rgb(255,255,255)`) and navy text (`rgb(23,54,76)`), full 蒜香爆燒肉 translation, separate recording and sentence feedback stages, real Mandarin ASR, Back-to-previous-stage, no Settings/transcript-edit/model-download controls in the visible flow, and no page errors.
+- User reported the previous build launched on the actual phone and recognized the actual menu image successfully. This pass's contrast/navigation checks are automated, not a new physical-phone test.
+- Pronunciation changes were checked with synthetic contours and real ASR recordings. Human false-rejection rate and audible phone playback were not measured. No uncertain attempt is automatically declared correct.
+- Current primary browser regression: `scripts/phone_release_smoke.cjs`; earlier walkthroughs below describe their respective revisions.
+
 # Release reliability validation · 11 November 2026
 
 This pass preserves the approved bubbly design and fixes lookup, dependency initialization, OCR review and sentence practice. The older redesign report below is historical.
