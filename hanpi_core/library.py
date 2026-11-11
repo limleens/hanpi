@@ -61,7 +61,7 @@ def save_entry(kind: str, hanzi: str, meaning: str, *, db_path: str | Path | Non
     if kind not in {"word", "sentence"}:
         raise ValueError("Save either a word or a sentence.")
     raw = (hanzi or "").strip()
-    clean = clean_hanzi(raw, max_hanzi=MAX_HANZI + 1)
+    clean = clean_hanzi(raw)
     if not clean or clean != raw or len(clean) > MAX_HANZI:
         raise ValueError(f"Choose 1–{MAX_HANZI} Chinese characters (without punctuation).")
     meaning = (meaning or "").strip()
