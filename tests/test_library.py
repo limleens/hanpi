@@ -39,7 +39,7 @@ def test_delete_persists(tmp_path):
 @pytest.mark.parametrize("kind, hanzi, meaning", [
     ("other", "你好", "Hello"), ("word", "", "Empty"),
     ("word", "English", "Not Hanzi"), ("word", "你好", ""),
-    ("word", "妈妈妈妈妈妈妈妈妈", "Too long"),
+    ("word", "妈妈" * 5001, "Too long"),
     ("word", "你 <script>", "Unsafe"),
 ])
 def test_reject_bad_inputs(tmp_path, kind, hanzi, meaning):
