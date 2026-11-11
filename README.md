@@ -85,3 +85,16 @@ The code uses packages through their documented APIs, instead of pasting in othe
 ## Privacy
 
 OCR and pitch analysis run locally. The optional online translation button shares the selected Chinese text with a third-party translation provider only when clicked. Browser speech synthesis may use device or platform services. No user accounts or telemetry are part of this prototype.
+
+
+## Phone camera and natural Mandarin voice
+
+The Gradio app is now phone-responsive and already accepts webcam/camera images, image uploads, and pasted photos. See [iPhone HTTPS setup](docs/PHONE_DEMO.md) to launch a **temporary password-protected https://*.gradio.live** testing link from your Windows laptop. A publicly hosted/permanent website is not yet deployed.
+
+There are now **two reference voice choices**:
+- Browser voice: device/platform Mandarin speech, no extra setup; naturalness depends on device.
+- Optional neural voice: online service via [edge-tts](https://github.com/rany2/edge-tts) using Mandarin voices Xiaoxiao, Yunxi and Xiaoyi, with adjustable playback speed and an audio player. **Only generated when you click a neural voice button.** Neural output sends the requested text to a third-party speech service and can fail when offline; the browser voice stays available.
+
+Neural speech synthesis is not the same as speech transcription or automatic grading. Current pronunciation assessment still covers one isolated syllable at a time.
+
+**Mobile access isn't automatically active after installing Hanpi.** You must start the host server and open its HTTPS URL on your phone. For a permanent production site, add a hosted backend and independent user storage; the existing SQLite collection is shared by anyone authenticated to the same temporary demo.
