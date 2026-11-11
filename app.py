@@ -303,7 +303,9 @@ def build_app():
                 with gr.Row(equal_height=False):
                     with gr.Column(scale=1, min_width=300):
                         gr.Markdown("### 1. Start with a photo")
-                        photo = gr.Image(label="Photo of Hanzi", type="pil", sources=["upload", "webcam", "clipboard"], height=225)
+                        photo = gr.Image(label="Photo of Hanzi · Camera / Upload / Paste", type="pil",
+                                          sources=["webcam", "upload", "clipboard"], height=245)
+                        gr.Markdown("On iPhone: tap Camera, allow access, then photograph the characters. Use an HTTPS website.")
                         ocr_btn = gr.Button("Find Hanzi in photo", variant="secondary")
                         ocr_message = gr.Markdown("Upload Chinese writing from a sign, menu, or textbook. Check the recognised text.")
                         hanzi_input = gr.Textbox(label="Detected Hanzi (all characters, editable)", value="你好", lines=3, max_lines=10,
@@ -319,6 +321,19 @@ def build_app():
                         current_char = gr.Textbox(value="你好", visible=False)
                         hear_btn = gr.Button("🔊 Hear an example (in context for sandhi)", variant="secondary")
                         full_phrase_btn = gr.Button("🔊 Hear entire phrase", variant="secondary")
+                        with gr.Accordion("✨ Natural Mandarin · online neural voices", open=True):
+                            gr.Markdown("Natural reference speech is generated **only on request** by an online service.")
+                            with gr.Row():
+                                reference_voice = gr.Dropdown(choices=voice_options(), value=DEFAULT_VOICE,
+                                                              label="Mandarin voice")
+                                reference_speed = gr.Slider(minimum=.65, maximum=1.20, value=.90, step=.05,
+                                                            label="Playback speed")
+                            with gr.Row():
+                                neural_single = gr.Button("✨ Natural selected syllable", variant="primary")
+                                neural_full = gr.Button("✨ Natural full phrase", variant="secondary")
+                            reference_audio = gr.Audio(label="Natural pronunciation", interactive=False, autoplay=True)
+                            neural_status = gr.Markdown("Requires internet. The browser-voice buttons above work as a fallback.")
+
                         speech = gr.Audio(sources=["microphone", "upload"], type="numpy", format="wav",
                                           label="Record pronunciation (one syllable)")
                         with gr.Accordion("Optional: text transcription", open=False):
@@ -378,6 +393,12 @@ def build_app():
             u.lang='zh-CN'; u.rate=0.75;
             window.speechSynthesis.speak(u);
         }""")
+        neural_single.click(_speak_neural_ui,
+                            inputs=[current_char, reference_voice, reference_speed],
+                            outputs=[reference_audio, neural_status])
+        neural_full.click(_speak_neural_ui,
+                          inputs=[hanzi_input, reference_voice, reference_speed],
+                          outputs=[reference_audio, neural_status])
         assess_btn.click(_assess_and_track, inputs=[speech, hanzi_input, choice, use_asr, active_saved],
                          outputs=[judgement, pitch_plot, transcription])
         hanzi_input.change(_tones_markup, inputs=hanzi_input, outputs=tone_cards)
