@@ -59,3 +59,5 @@ The managed cloud image already supplies Playwright, Chromium, FFmpeg and Noto C
 - Native-speaker evaluation of experimental pitch feedback, Windows hardware validation and a submission demo.
 
 No permanent deployment, per-user cloud storage or whole-sentence pronunciation accuracy is claimed. See `PHONE_DEMO.md` for the authenticated temporary HTTPS workflow.
+
+> **Visual update notice (11 November, after the original QA run):** The screenshots below document the FIRST mobile-first redesign. A subsequent typography, palette, button and illustration refresh was pushed to the same branch. The 47-test / browser-walkthrough result described above predates those styling changes. Refer to [VISUAL_DESIGN.md](VISUAL_DESIGN.md) and run a fresh visual/browser check before treating these screenshots as an accurate preview.
