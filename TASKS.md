@@ -1,59 +1,39 @@
-# Hanpi — delivery checklist
+# Hanpi · Release checklist
 
-## P0: working Hiya prototype
+## Implemented
+- [x] Dedicated Hanpi repository (moved from the experimental WELP branch).
+- [x] Image input: paste, drag and drop, upload, webcam.
+- [x] RapidOCR (with optional Tesseract fallback) for Chinese images.
+- [x] Remove 24-Hanzi truncation: retain all detected Hanzi and all text typed by the user.
+- [x] Produce pinyin and basic spoken tone sandhi via PyPinyin.
+- [x] Render colour-coded tone cards in a scrollable area.
+- [x] Use CC-CEDICT offline definitions for words, with clearly labelled dictionary glosses for longer text.
+- [x] Provide opt-in online translation for full-sentence meaning (limit per external API: 2,500 Hanzi).
+- [x] Browser Mandarin speech playback for a selected syllable or the full phrase.
+- [x] Record microphone audio and analyse isolated-syllable pitch using Parselmouth/Praat.
+- [x] Show experimental tone-pattern feedback and chart.
+- [x] Local SQLite Starred collection with save, delete, replay and practice counts.
+- [x] Add unit tests and GitHub Actions CI.
+- [x] Document external library licences and AI assistance in README/ai.md.
 
-- [x] Research existing Mandarin tone feedback, OCR and pitch-extraction projects.
-- [x] Choose desktop-first browser app (Gradio) over native iPhone for the 12-hour scope.
-- [x] Use a **separate feature branch** to avoid overwriting WELP.
-- [x] Upload photo → local Chinese OCR → editable Hanzi text.
-- [x] Show pinyin with basic tone sandhi (e.g., 你好: nǐ hǎo → ní hǎo).
-- [x] Select individual syllable → play browser reference → record microphone input.
-- [x] Measure real F0 via Praat/Parselmouth; estimate isolated-syllable contours.
-- [x] Show qualitative results, pitch chart, and tone-specific practice tip.
-- [x] Add conservative refusal for silent, too-short, ambiguous recordings.
-- [x] Add optional offline ASR only when explicitly enabled.
-- [x] Add setup documentation, AI use disclosure, and automated tests.
-- [x] Run automated contour and sandhi tests locally (10 passing).
-- [x] Smoke-test photo OCR fallback with a generated image of 你好.
-- [ ] **Run clean install on the target Windows laptop** and check microphone permissions.
-- [ ] **Test with genuine speaker recordings** of all four tones; log misses/abstentions.
-- [ ] **Test on 3 actual photos**, including a sign/menu rather than only generated text.
-- [ ] Confirm a Mandarin speech-synthesis voice exists on the demo browser.
-- [ ] Capture end-to-end demo video and write one-page Hiya summary.
-- [ ] Move hanpi folder to a standalone repository later if desired.
+## Verify on the user's Windows laptop before submission
+- [ ] Clone repo and pip install requirements into Python 3.11 venv.
+- [ ] Open localhost:7860, paste and drag in a real Chinese photo.
+- [ ] Test a **longer screenshot of at least 50 Hanzi** and confirm nothing disappears.
+- [ ] Check CC-CEDICT word definition for 咖啡 and proper handling of unknown entries.
+- [ ] Check online translation only triggers when clicked.
+- [ ] Listen to Chinese TTS in Edge/Chrome, confirm a Mandarin voice is installed.
+- [ ] Record 4 examples: 妈 / 麻 / 马 / 骂 and inspect pitch labels.
+- [ ] Star 中国, restart, practise again, verify SQLite persistence.
+- [ ] Record a short demo that includes a non-你好 example.
+- [ ] Complete Hiya's one-page write-up and ai.md check.
 
-## P1: after P0 is reliable
+## Future enhancements (not claimed as working)
+- [ ] Robust full-sentence ASR with forced syllable alignment.
+- [ ] Detect phoneme/consonant differences, not only tone contours.
+- [ ] Word-by-word speech playback highlighting.
+- [ ] More natural reference TTS with timed pronunciation tracking.
+- [ ] Tongue and mouth-shape visual diagrams for zh/ch/sh and retroflex sounds.
+- [ ] Dedicated iPhone experience and optional cloud sync for starred cards.
 
-- [ ] Collect real Mandarin speech examples and calibrate/replace the heuristic grader.
-- [ ] Evaluate [Tone.me pretrained Wav2Vec2 model](https://huggingface.co/cge7/wav2vec2-base-version3) for more robust tone classification.
-- [ ] Add syllable-level forced alignment for longer phrases.
-- [ ] Add proper phoneme/initial/final assessment separately from pitch.
-- [ ] Test tone sandhi and neutral tones with native speakers.
-- [ ] Check iPhone camera/microphone integration over HTTPS.
-
-## Manual test matrix
-
-| Input | Expected | Evidence |
-| --- | --- | --- |
-| Generated image of 你好 | OCR returns 你好 | Local Tesseract smoke test passed |
-| Written 你好 | Spoken ní hǎo | Unit test passed |
-| Synthesised level/rising/dipping/falling tones | Labels 1/2/3/4 | Four unit tests passed |
-| Silence, missing recording | Clear retry message | Unit tests passed |
-| Spoken Mandarin by multiple speakers | Quality judged cautiously | **Not validated yet** |
-| Connected sentence | Outside current scope | Deliberately unsupported |
-
-
-## Starred library and design improvements (November 11)
-
-- [x] Reviewed GuGu for friendly, card-based visual inspiration (no code copied).
-- [x] Added Starred tab for words and short sentences.
-- [x] Added local SQLite persistence for Hanzi, written/spoken pinyin, meaning, practice count.
-- [x] Avoid duplicate stars and preserve attempt history.
-- [x] Restore starred entries into existing microphone practice.
-- [x] Remove and refresh saved items.
-- [x] Add colour-coded tone cards in Practice tab.
-- [x] Add editable English meanings and offline glosses for built-in examples.
-- [x] Add persistence / dedup / validation regression tests.
-- [ ] Test a clean Windows install and real microphone after reopening saved entry.
-- [ ] Implement reliable sentence-level alignment and natural word-by-word voice playback.
-- [ ] Add automatic translation for arbitrary OCR results and richer articulation diagrams.
+**Scope:** Hanpi can read longer Chinese text, but scoring is deliberately one syllable at a time. Do not claim verified full-sentence pronunciation grading or clinical accuracy.
