@@ -1,106 +1,108 @@
-"""Hanpi — desktop-first, voice-led Mandarin pronunciation practice.
-
-Run from this directory: python app.py
-"""
+"""Hanpi — snap, translate, learn! Run with: python app.py."""
 from __future__ import annotations
 
 from html import escape
+from pathlib import Path
+import importlib.util
 import os
+
 import gradio as gr
 import matplotlib.pyplot as plt
 import numpy as np
 
 from hanpi_core.ocr import extract_hanzi
-from hanpi_core.gloss import meaning_for, lookup_meaning, translate_online
+from hanpi_core.gloss import meaning_for, lookup_meaning, translate_online, translate_to_chinese
 from hanpi_core.library import save_entry, list_entries, get_entry, delete_entry, mark_practiced
 from hanpi_core.text import clean_hanzi, get_syllables
 from hanpi_core.tones import PRACTICE_TIPS, TONES, analyze_tone
-from hanpi_core.voice import synthesize_neural, voice_options, DEFAULT_VOICE
+from hanpi_core.voice import synthesize_neural, DEFAULT_VOICE
+from hanpi_ui.presentation import character_choices, character_styles, spotlight, vocabulary_view
 
-CSS = """
-.gradio-container {max-width: 1160px !important;margin:auto !important;}
-#hero {padding:2rem 0 1rem;}
-#hero h1 {font-size:clamp(2.4rem,5vw,4rem);line-height:1.1;letter-spacing:-.045em;}
-#hero p {font-size:1.08rem;color:var(--body-text-color-subdued);}
-#target-card {min-height:145px;border-radius:18px;background:linear-gradient(135deg,#f3eee3,#fff8e9);color:#362618;padding:22px;}
-#target-card .hanzi {font-size:3.7rem;font-weight:700;line-height:1.35;}
-#target-card .pinyin {font-size:1.4rem;color:#7a5535;margin-top:5px;}
-#target-card .hint {font-size:.82rem;color:#806d58;margin-top:10px;}
-#result-card {padding:14px;border-radius:14px;background:var(--background-fill-secondary);}
-#eyebrow {letter-spacing:.16em;font-size:.75rem;font-weight:800;color:#a36a3b;text-transform:uppercase;}
+CSS = (Path(__file__).parent / 'hanpi_ui' / 'style.css').read_text(encoding='utf-8') + character_styles()
 
-#hero{border-radius:25px;padding:2.2rem!important;background:radial-gradient(circle at 95% 10%,#ffe7d1,transparent 45%),linear-gradient(125deg,#fff7ed,#fffdf9);border:1px solid #f2e4d6;margin:15px 0 23px;}
-.tone-strip{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;max-height:380px;overflow-y:auto;}
-.tone-chip{min-width:76px;display:flex;flex-direction:column;gap:4px;padding:13px;border-radius:16px;text-align:center;border:1px solid transparent;}
-.tone-chip b{font-size:28px}.tone-chip small{font-size:15px;font-weight:600}
-.tone-1{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;}
-.tone-2{background:#d1fae5;color:#047857;border-color:#a7f3d0;}
-.tone-3{background:#ede9fe;color:#6d28d9;border-color:#ddd6fe;}
-.tone-4{background:#fee2e2;color:#b91c1c;border-color:#fecaca;}
-.tone-5{background:#f1f5f9;color:#475569;border-color:#e2e8f0;}
-.library-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:15px 0;}
-.library-card{padding:21px;border-radius:20px;background:#fffdfa;border:1px solid #ece4dc;}
-.library-card .hanzi{font-size:34px;font-weight:700;margin:8px 0;color:#3c3026}
-.library-card .reading{color:#996844;font-size:16px;}
-.library-card .meaning{font-size:14px;margin-top:12px;color:#45392e}
-.library-card .meta{font-size:12px;color:#a88764;margin-top:12px}
-.library-empty{padding:28px;text-align:center;background:#fffaf5;border:1px dashed #d8bda4;border-radius:20px}
+BROWSER_SPEECH = """(text, rate, status) => {
+    if (!text) return status;
+    if (!('speechSynthesis' in window))
+        return 'Speech is unavailable in this browser. Try a browser with Mandarin speech support.';
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN'; utterance.rate = Number(rate);
+    const voice = window.speechSynthesis.getVoices().find(v => /^zh[-_](CN|Hans)/i.test(v.lang));
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
+    return status;
+}"""
 
-@media(max-width:700px){
-.gradio-container{max-width:100%!important;padding:0 12px!important;}
-#hero{padding:1.25rem!important;margin:6px 0 14px!important;border-radius:18px!important;}
-#hero h1{font-size:2.6rem!important;}
-#hero p{font-size:.94rem!important;}
-#target-card{padding:15px!important;min-height:120px!important;}
-#target-card .hanzi{font-size:3rem!important;}
-.library-grid{grid-template-columns:1fr;}
-.tone-chip{min-width:57px;padding:8px 10px;}
-.tone-chip b{font-size:23px;}
-.tone-chip small{font-size:13px;}
-button{min-height:42px;}
-}
-"""
 
-def _readings(text):
-    try:
-        return get_syllables(text), ""
-    except RuntimeError as exc:
-        return [], str(exc)
+def _notice(text):
+    return f'<div class="notice" role="status" aria-live="polite">{escape(text)}</div>' if text else ''
+
 
 def _target_panel(text: str, index: str):
-    syllables, error = _readings(text)
-    if not syllables:
-        return f'<div id="target-card"><p>{escape(error or "Enter Hanzi to begin.")}</p></div>', ""
-    try:
-        selected = syllables[int(index or 0)]
-    except (ValueError, IndexError):
-        selected = syllables[0]
-    spoken = escape(selected.spoken_pinyin)
-    written = escape(selected.written_pinyin)
-    note = f"Written {written} · spoken {spoken} (tone sandhi)" if written != spoken else f"Written and spoken: {spoken}"
-    return (f'<div id="target-card"><div class="hanzi">{escape(selected.hanzi)}</div>'
-            f'<div class="pinyin">{spoken}</div><div class="hint">{note} · '
-            f'tone {selected.expected_tone if selected.expected_tone != 5 else "neutral"}'
-            '</div></div>', (''.join(s.hanzi for s in syllables) if selected.written_pinyin != selected.spoken_pinyin else selected.hanzi))
+    """Keep context when sandhi changes the selected character's pronunciation."""
+    return spotlight(text, index)
 
-def _sync_text(text):
-    syllables, error = _readings(text)
-    if error:
-        return gr.update(choices=[], value=None), f"⚠️ {error}"
-    if not syllables:
-        return gr.update(choices=[], value=None), "Add a short phrase by photo or typing."
-    menu = [(s.title, str(s.index)) for s in syllables]
-    note = "Select one character; record only that syllable."
-    if any(s.written_pinyin != s.spoken_pinyin for s in syllables):
-        note += " Basic tone sandhi is accounted for."
-    return gr.update(choices=menu, value="0"), note
 
-def _read_image(image):
+def prepare_lesson(text, saved_id=None, meaning=None):
+    """One data path for Scan, Type, search, ASR and Saved."""
+    text = (text or '').strip()
+    if not clean_hanzi(text):
+        raise ValueError('Enter Chinese text, scan a photo, or explicitly translate an English search.')
+    choices = character_choices(text)
+    saved = get_entry(saved_id) if saved_id else None
+    if saved and saved.hanzi != clean_hanzi(text):
+        saved = None
+    if saved:
+        meaning, note = saved.meaning, 'Saved meaning · stored on this host.'
+    elif meaning is not None:
+        note = 'Online translation · review the meaning in context.'
+    else:
+        result = lookup_meaning(text)
+        meaning = result.text
+        note = f'{result.source} · {result.note}'
+    vocabulary, words = vocabulary_view(text)
+    return dict(text=text, choices=choices, meaning=meaning,
+                note=note, vocabulary=vocabulary, words=words, saved_id=str(saved.id) if saved else None)
+
+
+def _library_view():
+    entries = list_entries()
+    cards = '<div class="library-grid">' + ''.join(
+        f'<article class="library-card"><div class="meta">{escape(e.kind.upper())} · '
+        f'{e.practice_count} practice(s)</div>'
+        f'<div class="hanzi" lang="zh-CN">{escape(e.hanzi)}</div>'
+        f'<div class="reading">{escape(e.written_pinyin)}</div>'
+        f'<div class="meaning">{escape(e.meaning)}</div></article>' for e in entries
+    ) + '</div>' if entries else '<div class="library-empty">Your saved phrases will appear here.<br>Find a little Chinese worth keeping.</div>'
+    choices = [(f'{e.hanzi} · {e.meaning}', str(e.id)) for e in entries]
+    return gr.update(choices=choices, value=str(entries[0].id) if entries else None), cards, f'{len(entries)} saved item(s)'
+
+
+async def _listen(text, voice, rate, mode):
+    if not clean_hanzi(text):
+        return None, 'Choose a phrase or character first.', ''
+    if mode == 'Browser voice':
+        return None, 'Playing the browser Mandarin voice. Available voices depend on your device.', text
     try:
-        result, engine = extract_hanzi(image)
-        return result, f"✅ Detected with **{engine}**. Please review and correct OCR mistakes."
-    except (ValueError, RuntimeError) as exc:
-        return gr.update(), f"⚠️ {exc}"
+        audio = await synthesize_neural(text, voice=voice, rate=float(rate))
+        return audio, 'Natural Mandarin is ready. Tap play if your browser blocks autoplay.', ''
+    except (RuntimeError, ValueError) as exc:
+        return None, f'{exc} Trying the browser Mandarin voice; availability depends on your device.', text
+
+
+def _transcribe(audio):
+    if audio is None:
+        return '', 'Record a phrase first, then transcribe it.'
+    if importlib.util.find_spec('faster_whisper') is None:
+        return '', 'Speech input needs the optional Whisper install (requirements-asr.txt). You can use Type or Scan now.'
+    try:
+        from hanpi_core.asr import transcribe
+        text = transcribe(audio)
+        if not clean_hanzi(text):
+            return '', 'No Chinese speech was recognised. Try again, or use Type.'
+        return text, 'Check the transcript, then use this text. Transcription does not grade pronunciation.'
+    except Exception:
+        return '', 'Transcription is unavailable. Check the optional model download, or use Type or Scan.'
 
 def _pitch_figure(xs: np.ndarray, ys: np.ndarray, expected_tone: int):
     if not len(xs):
@@ -125,333 +127,416 @@ def _pitch_figure(xs: np.ndarray, ys: np.ndarray, expected_tone: int):
     ax.legend(loc="lower left", fontsize=8, frameon=False)
     ax.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
+    plt.close(fig)
     return fig
 
-def _assess(audio, text: str, selected_index: str, use_asr: bool):
-    syllables, error = _readings(text)
-    if error or not syllables:
-        return "⚠️ Enter a valid Hanzi phrase first.", None, "Not attempted"
+def _practice_result(audio, text, selected_index, use_asr=False):
+    syllables = get_syllables(text)
     try:
-        syllable = syllables[int(selected_index or 0)]
-    except (ValueError, IndexError):
-        return "⚠️ Choose a character first.", None, "Not attempted"
+        index = int(selected_index)
+        if not 0 <= index < len(syllables):
+            raise ValueError
+        syllable = syllables[index]
+    except (ValueError, TypeError):
+        return 'Choose a character first.', None, '', False
     try:
         score = analyze_tone(audio)
     except ValueError as exc:
-        return f"⚠️ {exc}", None, "Not attempted"
+        return f"### Couldn't judge that recording.\n\n{exc}", None, '', False
     expected = syllable.expected_tone
+    matched = expected != 5 and score.detected == expected
     if expected == 5:
-        judgement = "🟡 **Neutral tone is not automatically scored.**"
+        heading = 'Neutral tone is not automatically graded.'
     elif score.detected is None:
-        judgement = "🟡 **Not enough evidence to judge this tone.**"
-    elif score.detected == expected:
-        judgement = "🟢 **Promising match!** Your pitch contour resembles the target."
+        heading = "Couldn't judge that recording."
+    elif matched:
+        heading = 'Your tone shape looks close.'
     else:
-        judgement = f"🟠 **Different pitch pattern detected:** {TONES[score.detected]}."
-    detected = TONES.get(score.detected, "uncertain")
-    message = (f"### {syllable.hanzi} · {syllable.spoken_pinyin}\n\n"
-               f"{judgement}\n\n"
-               f"**Expected:** {TONES[expected]} · **Observed:** {detected}\n\n"
-               f"**Evidence:** {score.reason}\n\n"
-               f"**Try this:** {PRACTICE_TIPS[expected]}\n\n"
-               "*Experimental pitch-based coaching, not a validated pronunciation score. "
-               "This does not independently recognise the consonant or vowel.*")
-    transcript = "Disabled. Enable optional Whisper transcription to try it."
-    if use_asr:
-        try:
-            from hanpi_core.asr import transcribe
-            transcript = transcribe(audio)
-        except Exception as exc:
-            transcript = f"Offline transcription unavailable: {exc}. Install the optional ASR requirements."
-    return message, _pitch_figure(score.times, score.semitones, expected), transcript
+        heading = "Let's shape that tone."
+    feedback = (f'### {heading}\n\n{PRACTICE_TIPS[expected]}\n\n'
+                f'Expected **{TONES[expected]}** · observed **{TONES.get(score.detected, "uncertain")}**. '
+                f'{score.reason}\n\n'
+                '*Experimental pitch coaching for one syllable. This does not verify consonants, '
+                'vowels or whole-sentence pronunciation.*')
+    transcript = _transcribe(audio)[0] if use_asr else ''
+    return feedback, _pitch_figure(score.times, score.semitones, expected), transcript, matched
 
 
-
-def _tones_markup(text):
-    syllables, error = _readings(text)
-    if error or not syllables:
-        return '<em>Upload a photo or type Hanzi to see the tones.</em>'
-    return '<div class="tone-strip">' + ''.join(
-        f'<div class="tone-chip tone-{v.expected_tone}"><b>{escape(v.hanzi)}</b><small>{escape(v.spoken_pinyin)}</small></div>'
-        for v in syllables) + '</div><small>Blue 1 · Green 2 · Purple 3 · Red 4 · Grey neutral (spoken tones).</small>'
-
-
-def _library_view():
-    entries = list_entries()
-    if not entries:
-        cards = '<div class="library-empty">☆ Nothing saved yet. Star a word or sentence in Practice.</div>'
-    else:
-        cards = '<div class="library-grid">' + ''.join(
-            f'<div class="library-card"><div class="meta">★ {escape(e.kind)}</div>'
-            f'<div class="hanzi">{escape(e.hanzi)}</div>'
-            f'<div class="reading">{escape(e.written_pinyin)}</div>'
-            f'<div class="meaning">{escape(e.meaning)}</div>'
-            f'<div class="meta">Practised {e.practice_count} time(s)</div></div>'
-            for e in entries) + '</div>'
-    choices = [(f"{e.hanzi} — {e.meaning} ({e.kind})", str(e.id)) for e in entries]
-    return (gr.update(choices=choices, value=str(entries[0].id) if entries else None),
-            cards, f"**{len(entries)} saved item(s)** · Stored locally on this computer.")
-
-
-def _star_word(text, selection, word, meaning):
-    syllables, error = _readings(text)
-    if error or not syllables:
-        return ("⚠️ Enter valid Hanzi first.", *_library_view())
-    try:
-        selected = syllables[int(selection or 0)].hanzi
-    except (ValueError, IndexError):
-        return ("⚠️ Choose a character first.", *_library_view())
-    term = (word or "").strip() or selected
-    if term not in clean_hanzi(text):
-        return ("⚠️ The word must appear in the current phrase.", *_library_view())
-    try:
-        e = save_entry("word", term, meaning)
-        return (f"★ Saved **{e.hanzi}**.", *_library_view())
-    except (ValueError, RuntimeError) as exc:
-        return (f"⚠️ {exc}", *_library_view())
-
-
-def _star_sentence(text, meaning):
-    try:
-        e = save_entry("sentence", clean_hanzi(text), meaning)
-        return (f"★ Saved **{e.hanzi}**.", *_library_view())
-    except (ValueError, RuntimeError) as exc:
-        return (f"⚠️ {exc}", *_library_view())
-
-
-def _saved_detail(entry_id):
-    e = get_entry(entry_id)
-    if not e:
-        return "Select an entry to see its reading."
-    sandhi = f" · Spoken **{escape(e.spoken_pinyin)}**" if e.written_pinyin != e.spoken_pinyin else ""
-    return f"### {escape(e.hanzi)} · {escape(e.written_pinyin)}\n\n{escape(e.meaning)}{sandhi}\n\nPractised {e.practice_count} time(s)."
-
-
-def _reopen_saved(entry_id):
-    e = get_entry(entry_id)
-    if not e:
-        return gr.update(), gr.update(), gr.update(), None, "⚠️ Select a saved item."
-    return (e.hanzi, e.meaning, gr.update(selected="practice"), str(e.id),
-            f"★ Reopened {e.hanzi} for practice.")
-
-
-def _remove_saved(entry_id):
-    ok = delete_entry(entry_id)
-    return ("Removed star." if ok else "Select a saved item.", *_library_view())
-
-
-def _meaning_for_selection(text, selection):
-    syllables, _ = _readings(text)
-    try:
-        return meaning_for(syllables[int(selection or 0)].hanzi)
-    except (ValueError, IndexError):
-        return ""
-
-
-def _suggest_meaning(text, saved_id):
-    e = get_entry(saved_id)
-    return e.meaning if e and e.hanzi == clean_hanzi(text) else meaning_for(text)
+def _assess(audio, text, selected_index, use_asr=False):
+    return _practice_result(audio, text, selected_index, use_asr)[:3]
 
 
 def _assess_and_track(audio, text, selection, use_asr, saved_id):
-    feedback, chart, transcript = _assess(audio, text, selection, use_asr)
-    e = get_entry(saved_id)
-    if feedback.startswith("###") and e and e.hanzi == clean_hanzi(text):
+    feedback, chart, transcript, matched = _practice_result(audio, text, selection, use_asr)
+    saved = get_entry(saved_id)
+    if matched and saved and saved.hanzi == clean_hanzi(text):
         mark_practiced(saved_id)
     return feedback, chart, transcript
 
 
-
-def _lookup_phrase_ui(text, saved_id):
-    saved = get_entry(saved_id)
-    if saved and saved.hanzi == clean_hanzi(text):
-        return saved.meaning, "★ Meaning restored from your saved collection."
-    result = lookup_meaning(text)
-    if result.exact:
-        return result.text, f"📖 **{result.source}** · {result.note}"
-    if result.text:
-        return result.text, f"⚠️ **{result.source}** · {result.note}"
-    return "", f"ℹ️ {result.note}"
-
-
-def _translate_phrase_ui(text, previous):
-    try:
-        translated = translate_online(text)
-        return translated, "✅ Translated online. Review the result before starring."
-    except (ValueError, RuntimeError) as exc:
-        return previous, f"⚠️ {exc}"
-
-
-async def _speak_neural_ui(text, voice, rate):
-    """On-demand online neural reference speech; never automatic on upload."""
-    try:
-        path = await synthesize_neural(text, voice=voice, rate=float(rate))
-        return path, "Natural Mandarin reference ready. Press play if your phone blocks autoplay."
-    except (RuntimeError, ValueError) as exc:
-        return None, f"Neural voice unavailable: {exc}. Use the browser-voice buttons."
+def _heading(eyebrow, title, description):
+    return (f'<div class="screen-heading"><p class="eyebrow">{escape(eyebrow)}</p>'
+            f'<h1>{escape(title)}</h1><p>{escape(description)}</p></div>')
 
 
 def build_app():
-    with gr.Blocks(title="hanpi · see it, say it") as demo:
-        gr.Markdown("""<div id='hero'><div id='eyebrow'>Voice-first language practice</div>
-<h1>hanpi <span style='color:#bb7544'>·</span> 汉拼</h1>
-<p>See a Chinese character. Hear its pronunciation. Try the tone. Learn from your own voice.</p></div>""")
+    with gr.Blocks(title='Hanpi · snap, translate, learn!', analytics_enabled=False) as demo:
+        phrase = gr.State('')
+        selected = gr.State(None)
         active_saved = gr.State(None)
-        with gr.Tabs(selected="practice") as main_tabs:
-            with gr.Tab("🎙 Practice", id="practice"):
-                gr.Markdown("**01 · Choose a phrase** &nbsp;&nbsp;&nbsp;&nbsp; **02 · Speak one syllable** &nbsp;&nbsp;&nbsp;&nbsp; **03 · Inspect pitch**")
-                with gr.Row(equal_height=False):
-                    with gr.Column(scale=1, min_width=300):
-                        gr.Markdown("### 1. Start with a photo")
-                        photo = gr.Image(label="Photo of Hanzi · Camera / Upload / Paste", type="pil",
-                                          sources=["webcam", "upload", "clipboard"], height=245,
-                                          webcam_options=gr.WebcamOptions(mirror=False, constraints={"facingMode": "environment"}))
-                        gr.Markdown("On iPhone: tap Camera, allow access, then photograph the characters. Use an HTTPS website.")
-                        ocr_btn = gr.Button("Find Hanzi in photo", variant="secondary")
-                        ocr_message = gr.Markdown("Upload Chinese writing from a sign, menu, or textbook. Check the recognised text.")
-                        hanzi_input = gr.Textbox(label="Detected Hanzi (all characters, editable)", value="你好", lines=3, max_lines=10,
-                                                 placeholder="例如：你好 or 中国")
-                        gr.Examples(examples=[["你好"], ["北京大学"], ["我喜欢咖啡"], ["图书馆在哪里"], ["今天的天气很好"], ["谢谢"]],
-                                    inputs=[hanzi_input], label="Quick examples")
-                    with gr.Column(scale=1, min_width=300):
-                        gr.Markdown("### 2. Practise one syllable")
-                        choice = gr.Dropdown(choices=[("1. 你 · ní (sandhi)", "0"), ("2. 好 · hǎo", "1")],
-                                             value="0", label="Select a syllable")
-                        chooser_note = gr.Markdown("Choose a character and record only that syllable.")
-                        target_panel = gr.HTML(_target_panel("你好", "0")[0])
-                        current_char = gr.Textbox(value="你好", visible=False)
-                        hear_btn = gr.Button("🔊 Hear an example (in context for sandhi)", variant="secondary")
-                        full_phrase_btn = gr.Button("🔊 Hear entire phrase", variant="secondary")
-                        with gr.Accordion("✨ Natural Mandarin · online neural voices", open=True):
-                            gr.Markdown("Natural reference speech is generated **only on request** by an online service.")
-                            with gr.Row():
-                                reference_voice = gr.Dropdown(choices=voice_options(), value=DEFAULT_VOICE,
-                                                              label="Mandarin voice")
-                                reference_speed = gr.Slider(minimum=.65, maximum=1.20, value=.90, step=.05,
-                                                            label="Playback speed")
-                            with gr.Row():
-                                neural_single = gr.Button("✨ Natural selected syllable", variant="primary")
-                                neural_full = gr.Button("✨ Natural full phrase", variant="secondary")
-                            reference_audio = gr.Audio(label="Natural pronunciation", interactive=False, autoplay=True)
-                            neural_status = gr.Markdown("Requires internet. The browser-voice buttons above work as a fallback.")
+        origin = gr.State('Scan')
+        settings_open = gr.State(False)
+        with gr.Row():
+            gr.HTML('<header id="brand"><div class="brand-mark" aria-hidden="true">汉</div>'
+                    '<div><div class="wordmark">hanpi</div><div class="tagline">snap, translate, learn!</div></div></header>')
+            settings_toggle = gr.Button('Settings', scale=0, min_width=88, elem_id='settings-toggle')
+        with gr.Row(elem_id='search-row'):
+            search = gr.Textbox(label='Search Chinese or English', placeholder='Search Chinese or English…',
+                                lines=1, max_lines=1, show_label=False, container=False, scale=5, min_width=140, elem_id='search-box')
+            search_button = gr.Button('Search', scale=0, min_width=82, elem_id='search-button')
+        notice = gr.HTML('', elem_id='notice')
+        english_button = gr.Button('Translate English online', visible=False)
+        with gr.Column(visible=False, elem_id='settings-panel') as settings:
+            gr.Markdown('### Make it sound like you\nNatural voice sends the selected text to an online speech service only when you tap Listen.')
+            voice = gr.Radio([('Female', DEFAULT_VOICE), ('Male', 'zh-CN-YunxiNeural')], value=DEFAULT_VOICE, label='Mandarin voice')
+            speed = gr.Radio([('0.75×', .75), ('1×', 1.), ('1.25×', 1.25)], value=1., label='Speed')
+            mode = gr.Radio(['Natural voice (online)', 'Browser voice'], value='Natural voice (online)', label='Playback')
+            use_asr = gr.Checkbox(False, label='Use optional Whisper transcripts during practice')
+            gr.Markdown('Pitch coaching is experimental and only evaluates one isolated syllable. It does not detect phoneme errors.\n\n'
+                        'Saved vocabulary is stored on this host, shared across authenticated sessions. It is not cloud sync.', elem_classes='microcopy')
 
-                        speech = gr.Audio(sources=["microphone", "upload"], type="numpy", format="wav",
-                                          label="Record pronunciation (one syllable)")
-                        with gr.Accordion("Optional: text transcription", open=False):
-                            use_asr = gr.Checkbox(value=False, label="Attempt offline Whisper (extra install + model download)")
-                            gr.Markdown("Whisper can infer words from context; pitch assessment is separate.")
-                        assess_btn = gr.Button("Analyse my tone", variant="primary")
-                gr.Markdown("### 3. Your feedback")
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        judgement = gr.Markdown("Record a syllable and press **Analyse my tone**.", elem_id="result-card")
-                        transcription = gr.Textbox(label="Optional text transcription (not used to grade tones)",
-                                                   value="Not yet run", interactive=False)
-                    with gr.Column(scale=1):
-                        pitch_plot = gr.Plot(label="Your pitch against a schematic target")
-                gr.Markdown("""---
-        **Technique:** Photo OCR → Pinyin + sandhi → microphone audio → Praat pitch tracking → interpretable contour feedback.
-        Practise **one syllable at a time**; tone accuracy is not validated on human speech yet.""")
+        with gr.Column() as scan_view:
+            gr.HTML(_heading('A LITTLE CHINESE, EVERY DAY', 'What will you discover?', 'See Chinese. Hear it. Say it with confidence.'))
+            with gr.Column(elem_classes='surface'):
+                photo = gr.Image(label='Scan Chinese', type='pil', sources=['upload', 'webcam', 'clipboard'], height=245,
+                                 elem_id='photo', webcam_options=gr.WebcamOptions(mirror=False, constraints={'facingMode':'environment'}))
+                gr.Markdown('Point your camera at Chinese text, or drop an image here.', elem_classes='microcopy')
+                scan_button = gr.Button('Recognize characters', variant='primary')
+                gr.Markdown('Camera and microphone need HTTPS on your phone. Upload works too.', elem_classes='microcopy')
+            type_shortcut = gr.Button('Type a phrase instead', variant='secondary')
 
-                gr.Markdown("### Pinyin & tone colours")
-                tone_cards = gr.HTML(_tones_markup("你好"))
-                sentence_meaning = gr.Textbox(label="Dictionary meaning / translation (editable)", value="Hello", lines=2)
-                meaning_status = gr.Markdown("📖 Sample vocabulary. Check your chosen text for a dictionary meaning.")
-                translate_button = gr.Button("🌐 Translate entire text online (optional)", variant="secondary")
-                gr.Markdown("*Clicking translation shares the text with an external service; dictionary lookup is offline.*")
-                gr.Markdown("### ☆ Add to your collection")
-                with gr.Row():
-                    with gr.Column():
-                        word_input = gr.Textbox(label="Word from the phrase (optional)", placeholder="Leave blank for the selected character")
-                        word_meaning = gr.Textbox(label="English word meaning", value="You")
-                        star_word_button = gr.Button("☆ Star word", variant="secondary")
-                    with gr.Column():
-                        gr.Markdown("**Save the full phrase**")
-                        gr.Markdown("Store the Hanzi, pinyin and editable English meaning.")
-                        star_sentence_button = gr.Button("☆ Star sentence", variant="secondary")
-                star_status = gr.Markdown("Saved vocabulary is private and remains on your computer.")
-            with gr.Tab("★ Starred", id="starred"):
-                gr.Markdown("### Your Mandarin collection")
-                gr.Markdown("Words and sentences you have starred—ready to practise again.")
-                starred_total = gr.Markdown("Loading saved items…")
-                starred_cards = gr.HTML('<div class="library-empty">Loading…</div>')
-                saved_choice = gr.Dropdown(choices=[], label="Choose a saved word or sentence", interactive=True)
-                saved_details = gr.Markdown("Choose a saved entry to review.")
-                with gr.Row():
-                    review_btn = gr.Button("🎙 Practise this again", variant="primary")
-                    refresh_btn = gr.Button("↻ Refresh")
-                    unstar_btn = gr.Button("Remove star", variant="secondary")
-                starred_status = gr.Markdown("Stored offline in data/hanpi_library.sqlite3.")
+        with gr.Column(visible=False) as type_view:
+            gr.HTML(_heading('START WITH A FEW WORDS', 'A phrase to make your own.', 'Type Chinese and let curiosity take it from there.'))
+            with gr.Column(elem_classes='surface'):
+                typed = gr.Textbox(label='Chinese phrase', placeholder='例如：我喜欢咖啡', lines=3)
+                learn_button = gr.Button('Learn this phrase', variant='primary')
+                gr.Examples([['我喜欢咖啡'], ['图书馆在哪里'], ['你好'], ['北京大学']], inputs=[typed], label='A little inspiration', elem_id='examples')
 
-        ocr_btn.click(_read_image, inputs=photo, outputs=[hanzi_input, ocr_message])
-        updated = hanzi_input.change(_sync_text, inputs=hanzi_input, outputs=[choice, chooser_note])
-        updated.then(_target_panel, inputs=[hanzi_input, choice], outputs=[target_panel, current_char])
-        choice.change(_target_panel, inputs=[hanzi_input, choice], outputs=[target_panel, current_char])
-        hear_btn.click(fn=None, inputs=[current_char], outputs=None, js="""(hanzi) => {
-            if (!hanzi) return;
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(hanzi);
-            u.lang='zh-CN'; u.rate=0.75;
-            window.speechSynthesis.speak(u);
+        with gr.Column(visible=False) as speak_view:
+            gr.HTML(_heading('FROM YOUR VOICE', 'Say something in Chinese.', 'Turn a recording into a phrase to explore.'))
+            with gr.Column(elem_classes='surface'):
+                speech_input = gr.Audio(sources=['microphone','upload'], type='numpy', format='wav', label='Record a Chinese phrase')
+                transcribe_button = gr.Button('Transcribe recording', variant='secondary')
+                asr_status = gr.Markdown('Optional Whisper transcription needs requirements-asr.txt and a model download. Type and Scan work without it.', elem_classes='microcopy')
+                spoken_text = gr.Textbox(label='Check your transcript', lines=2)
+                use_text = gr.Button('Use this text', variant='primary')
+
+        with gr.Column(visible=False) as saved_view:
+            gr.HTML(_heading('YOUR LITTLE COLLECTION', 'Worth coming back to.', 'Words and phrases you’ve made a connection with.'))
+            saved_total = gr.Markdown('')
+            saved_cards = gr.HTML('')
+            with gr.Column(elem_classes='surface'):
+                saved_choice = gr.Dropdown(choices=[], label='Choose a saved word or phrase', interactive=True)
+                with gr.Row():
+                    reopen_button = gr.Button('Practise again', variant='primary')
+                    remove_button = gr.Button('Remove star', variant='secondary')
+                gr.Markdown('Stored on this host. Shared by anyone signed in to this demo; not per-user cloud sync.', elem_classes='microcopy')
+
+        with gr.Column(visible=False, elem_id='lesson') as lesson_view:
+            back_to_input = gr.Button('← New phrase', size='sm', scale=0, min_width=0, elem_id='new-phrase')
+            gr.HTML('<div class="screen-heading" id="lesson-heading"><p class="eyebrow">A PHRASE, A LITTLE POSSIBILITY</p>'
+                    '<h2>Let’s learn this phrase</h2></div>')
+            characters = gr.Radio(choices=[], value=None, label='Characters and pinyin', show_label=False,
+                                  interactive=True, container=False, elem_id='character-choices')
+            gr.Markdown('Tap a character or its pinyin to practise. Colour shows the spoken tone.', elem_id='tone-legend')
+            with gr.Column() as phrase_info:
+                with gr.Column(elem_classes='surface'):
+                    meaning = gr.Textbox(label='English meaning (editable)', show_label=False, container=False, lines=2, elem_id='meaning')
+                    meaning_note = gr.Markdown('', elem_id='meaning-note')
+                    with gr.Row():
+                        listen_phrase = gr.Button('Listen to phrase', variant='primary')
+                        save_phrase = gr.Button('☆ Save phrase', variant='secondary')
+                    whole_button = gr.Button('Try the whole phrase', variant='secondary')
+                    with gr.Accordion('Edit text & translate', open=False):
+                        editor = gr.Textbox(label='Chinese text (editable)', lines=3)
+                        update_button = gr.Button('Update phrase', variant='secondary')
+                        gr.Markdown('Online translation sends this phrase to an external provider only when clicked.', elem_classes='microcopy')
+                        translate_button = gr.Button('Translate phrase online', variant='secondary')
+                gr.Markdown('#### A few words to know', elem_id='vocab-heading')
+                vocabulary = gr.HTML('')
+                with gr.Accordion('Keep a word', open=False):
+                    word_choice = gr.Dropdown(choices=[], label='Word from this phrase', interactive=True, allow_custom_value=True)
+                    word_meaning = gr.Textbox(label='Word meaning (editable)')
+                    save_word = gr.Button('☆ Save word', variant='secondary')
+
+            with gr.Column(visible=False) as focus_view:
+                focus_card = gr.HTML('', elem_id='spotlight-card')
+                current_speech = gr.Textbox(visible=False)
+                with gr.Row():
+                    listen_character = gr.Button('Listen', variant='primary')
+                    try_button = gr.Button('Try it', variant='secondary')
+                with gr.Column(visible=False, elem_classes='surface') as recording_view:
+                    recording = gr.Audio(sources=['microphone','upload'], type='numpy', format='wav', label='Say this syllable', elem_id='practice-recording')
+                    check_button = gr.Button('Check my tone', variant='primary')
+                    feedback = gr.Markdown('', elem_id='feedback')
+                    retry_button = gr.Button('Try again', variant='secondary')
+                    with gr.Accordion('Pitch detail', open=False):
+                        chart = gr.Plot(label='Measured pitch and schematic target')
+                        transcript = gr.Textbox(label='Optional transcript · not a pronunciation grade', interactive=False)
+                        gr.Markdown('A pitch shape cannot independently verify consonants or vowels.', elem_classes='microcopy')
+                with gr.Row():
+                    back_to_phrase = gr.Button('Back to phrase', variant='secondary')
+                    next_button = gr.Button('Next character', variant='secondary')
+                star_character = gr.Button('☆ Save this character', size='sm')
+
+            with gr.Column(visible=False, elem_classes='surface') as whole_view:
+                gr.Markdown('### Try the whole phrase\nListen, record, then play your recording back. Choose any character above to work on its tone.')
+                listen_whole = gr.Button('Listen to full phrase', variant='primary')
+                whole_recording = gr.Audio(sources=['microphone','upload'], type='numpy', format='wav', label='Record my attempt')
+                review_button = gr.Button('Review recording', variant='secondary')
+                whole_feedback = gr.Markdown('Whole-phrase tones are not automatically graded.', elem_classes='microcopy')
+                with gr.Row():
+                    finish_button = gr.Button('Finish practice', variant='primary')
+                    whole_back = gr.Button('Back to phrase', variant='secondary')
+
+            with gr.Column(visible=False) as completion_view:
+                gr.HTML('<div class="completion"><div class="seal" aria-hidden="true">✓</div><h2>Nice practice session!</h2><p>Want to save this phrase?</p></div>')
+                complete_save = gr.Button('☆ Save phrase', variant='primary')
+                with gr.Row():
+                    again_button = gr.Button('Practice again', variant='secondary')
+                    done_button = gr.Button('Done', variant='secondary')
+
+            reference_audio = gr.Audio(label='Mandarin reference', interactive=False, autoplay=True, visible=False)
+            voice_status = gr.Markdown('', elem_classes='microcopy')
+            fallback_text = gr.Textbox(visible=False)
+
+        with gr.Row(elem_id='bottom-nav'):
+            nav_buttons = {
+                name: gr.Button(name, min_width=0, elem_classes=['nav-item', 'nav-active'] if name=='Scan' else ['nav-item'])
+                for name in ('Scan','Type','Speak','Saved')
+            }
+
+
+        # A single transition target keeps input methods and result state consistent.
+        lesson_outputs = [phrase, selected, active_saved, origin, editor, characters,
+                          meaning, meaning_note, vocabulary, word_choice, word_meaning, lesson_view,
+                          scan_view, type_view, speak_view, saved_view, phrase_info, focus_view,
+                          recording_view, whole_view, completion_view, focus_card, current_speech,
+                          recording, feedback, chart, transcript, reference_audio, voice_status,
+                          fallback_text, notice, english_button, search, whole_recording, whole_feedback, *nav_buttons.values()]
+
+        def show_phrase():
+            return {phrase_info:gr.update(visible=True), focus_view:gr.update(visible=False),
+                    recording_view:gr.update(visible=False), whole_view:gr.update(visible=False),
+                    completion_view:gr.update(visible=False), characters:gr.update(value=None), selected:None,
+                    recording:None, feedback:'', chart:None, transcript:'',
+                    reference_audio:gr.update(value=None, visible=False), voice_status:'', fallback_text:''}
+
+        def open_lesson(raw, source='Type', saved_id=None, supplied_meaning=None):
+            try:
+                data = prepare_lesson(raw, saved_id, supplied_meaning)
+            except (ValueError, RuntimeError) as exc:
+                return {notice:_notice(str(exc)), english_button:gr.update(visible=bool((raw or '').strip()) and not clean_hanzi(raw)), search:raw or ''}
+            values = show_phrase()
+            values.update({phrase:data['text'], origin:source, editor:data['text'], active_saved:data['saved_id'],
+                           characters:gr.update(choices=data['choices'], value=None),
+                           meaning:data['meaning'], meaning_note:data['note'], vocabulary:data['vocabulary'],
+                           word_choice:gr.update(choices=data['words'], value=None), word_meaning:'',
+                           lesson_view:gr.update(visible=True), scan_view:gr.update(visible=False),
+                           type_view:gr.update(visible=False), speak_view:gr.update(visible=False), saved_view:gr.update(visible=False),
+                           notice:'', english_button:gr.update(visible=False), whole_recording:None, whole_feedback:'Whole-phrase tones are not automatically graded.'})
+            values.update(nav_state(source))
+            return values
+
+        def scan(image):
+            try:
+                text, engine = extract_hanzi(image)
+            except (ValueError, RuntimeError) as exc:
+                return {notice:_notice(str(exc))}
+            values = open_lesson(text, 'Scan')
+            values[notice] = _notice(f'Found Chinese characters with {engine}. Check the text before you practise.')
+            return values
+
+        def english_search(raw):
+            try:
+                return open_lesson(translate_to_chinese(raw), 'Type', supplied_meaning=raw)
+            except (ValueError, RuntimeError) as exc:
+                return {notice:_notice(str(exc))}
+
+        def nav_state(destination):
+            return {button:gr.update(elem_classes=['nav-item','nav-active'] if name==destination else ['nav-item'])
+                    for name, button in nav_buttons.items()}
+
+        def navigate(destination):
+            choice_update, cards, total = _library_view()
+            values = {scan_view:gr.update(visible=destination=='Scan'), type_view:gr.update(visible=destination=='Type'),
+                    speak_view:gr.update(visible=destination=='Speak'), saved_view:gr.update(visible=destination=='Saved'),
+                    lesson_view:gr.update(visible=False), notice:'', english_button:gr.update(visible=False),
+                    saved_choice:choice_update, saved_cards:cards, saved_total:total,
+                    reference_audio:gr.update(value=None, visible=False), voice_status:'', fallback_text:''}
+            values.update(nav_state(destination))
+            return values
+
+        def focus(text, index):
+            choices = character_choices(text)
+            try:
+                position = int(str(index).split(':')[0])
+                if not 0 <= position < len(choices):
+                    raise ValueError
+            except (TypeError, ValueError):
+                return show_phrase()
+            html, spoken = _target_panel(text, str(position))
+            return {characters:gr.update(value=choices[position][1]), selected:str(position), focus_card:html, current_speech:spoken,
+                    phrase_info:gr.update(visible=False), focus_view:gr.update(visible=True),
+                    recording_view:gr.update(visible=False), whole_view:gr.update(visible=False), completion_view:gr.update(visible=False),
+                    recording:None, feedback:'', chart:None, transcript:'', notice:'',
+                    reference_audio:gr.update(value=None, visible=False), voice_status:'', fallback_text:''}
+
+        def complete():
+            values = show_phrase()
+            values.update({phrase_info:gr.update(visible=False), completion_view:gr.update(visible=True)})
+            return values
+
+        def next_character(text, index):
+            try:
+                position = int(index) + 1
+            except (ValueError, TypeError):
+                position = 0
+            return focus(text, str(position)) if position < len(get_syllables(text)) else complete()
+
+        def save_item(kind, text, gloss):
+            try:
+                item = save_entry(kind, clean_hanzi(text), gloss)
+                choice_update, cards, total = _library_view()
+                gr.Info(f'Saved {item.hanzi} to Starred.')
+                values = {notice:_notice(f'Saved {item.hanzi} to Starred.'), saved_choice:choice_update, saved_cards:cards, saved_total:total}
+                if kind == 'sentence':
+                    values[active_saved] = str(item.id)
+                return values
+            except (ValueError, OSError) as exc:
+                return {notice:_notice(str(exc))}
+
+        def keep_word(text, word, gloss):
+            if not word or word != clean_hanzi(word) or word not in clean_hanzi(text):
+                return {notice:_notice('Choose a Chinese word from the current phrase first.')}
+            return save_item('word', word, gloss)
+
+        def keep_character(text, index):
+            try:
+                syllables = get_syllables(text)
+                position = int(index)
+                if not 0 <= position < len(syllables):
+                    raise ValueError
+                word = syllables[position].hanzi
+                return save_item('word', word, meaning_for(word))
+            except (TypeError, ValueError):
+                return {notice:_notice('Choose a character first.')}
+
+        def reopen(entry_id):
+            item = get_entry(entry_id)
+            return open_lesson(item.hanzi, 'Saved', str(item.id)) if item else {notice:_notice('Choose a saved item first.')}
+
+        def remove(entry_id):
+            if not delete_entry(entry_id):
+                return {notice:_notice('Choose a saved item first.')}
+            choice_update, cards, total = _library_view()
+            return {notice:_notice('Star removed.'), saved_choice:choice_update, saved_cards:cards, saved_total:total}
+
+        def translate(text, previous):
+            try:
+                return translate_online(text), 'Online translation · review before saving.', _notice('Translation ready.')
+            except (ValueError, RuntimeError) as exc:
+                return previous, gr.skip(), _notice(str(exc))
+
+        async def listen(text, reference_voice, playback_speed, playback_mode):
+            path, message, browser_text = await _listen(text, reference_voice, playback_speed, playback_mode)
+            return gr.update(value=path, visible=bool(path)), message, browser_text
+
+        def whole_practice():
+            values = show_phrase()
+            values.update({phrase_info:gr.update(visible=False), whole_view:gr.update(visible=True)})
+            return values
+
+        def review_whole(audio, transcribe):
+            if audio is None:
+                return 'Record your attempt first. You can play it back and choose a character to practise.'
+            if transcribe:
+                text, message = _transcribe(audio)
+                return f'Transcript: {text}\n\n{message}\n\nWhole-phrase tones are not graded.' if text else message
+            return 'Listen back to your recording. Pick a character above for isolated-syllable feedback. Whole-phrase tones are not graded.'
+
+        route_outputs = [scan_view,type_view,speak_view,saved_view,lesson_view,notice,english_button,*nav_buttons.values(),saved_choice,saved_cards,saved_total,reference_audio,voice_status,fallback_text]
+        focus_outputs = [characters,selected,focus_card,current_speech,phrase_info,focus_view,recording_view,whole_view,completion_view,recording,feedback,chart,transcript,notice,reference_audio,voice_status,fallback_text]
+        save_outputs = [notice,saved_choice,saved_cards,saved_total,active_saved]
+        settings_toggle.click(lambda opened:(not opened, gr.update(visible=not opened)), inputs=settings_open, outputs=[settings_open,settings])
+        for destination, button in nav_buttons.items():
+            button.click(lambda dest=destination:navigate(dest), outputs=route_outputs)
+        type_shortcut.click(lambda:navigate('Type'), outputs=route_outputs)
+        back_to_input.click(navigate, inputs=origin, outputs=route_outputs)
+        opening_events = []
+        opening_events.append(search_button.click(lambda text:open_lesson(text,'Type'), inputs=search, outputs=lesson_outputs))
+        opening_events.append(search.submit(lambda text:open_lesson(text,'Type'), inputs=search, outputs=lesson_outputs))
+        opening_events.append(english_button.click(english_search, inputs=search, outputs=lesson_outputs))
+        opening_events.append(learn_button.click(lambda text:open_lesson(text,'Type'), inputs=typed, outputs=lesson_outputs))
+        opening_events.append(typed.submit(lambda text:open_lesson(text,'Type'), inputs=typed, outputs=lesson_outputs))
+        opening_events.append(scan_button.click(scan, inputs=photo, outputs=lesson_outputs))
+        opening_events.append(update_button.click(open_lesson, inputs=[editor,origin,active_saved], outputs=lesson_outputs))
+        transcribe_button.click(_transcribe, inputs=speech_input, outputs=[spoken_text,asr_status])
+        opening_events.append(use_text.click(lambda text:open_lesson(text,'Speak'), inputs=spoken_text, outputs=lesson_outputs))
+        focus_event = characters.input(focus, inputs=[phrase,characters], outputs=focus_outputs)
+        focus_event.then(fn=None, inputs=None, outputs=None, js="""() => {
+            document.getElementById('character-choices')?.scrollIntoView({
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block:'start'});
         }""")
-        neural_single.click(_speak_neural_ui,
-                            inputs=[current_char, reference_voice, reference_speed],
-                            outputs=[reference_audio, neural_status])
-        neural_full.click(_speak_neural_ui,
-                          inputs=[hanzi_input, reference_voice, reference_speed],
-                          outputs=[reference_audio, neural_status])
-        assess_btn.click(_assess_and_track, inputs=[speech, hanzi_input, choice, use_asr, active_saved],
-                         outputs=[judgement, pitch_plot, transcription])
-        hanzi_input.change(_tones_markup, inputs=hanzi_input, outputs=tone_cards)
-        hanzi_input.change(lambda s: _meaning_for_selection(s, "0"), inputs=hanzi_input, outputs=word_meaning)
-        hanzi_input.change(_lookup_phrase_ui, inputs=[hanzi_input, active_saved], outputs=[sentence_meaning, meaning_status])
-        translate_button.click(_translate_phrase_ui, inputs=[hanzi_input, sentence_meaning],
-                               outputs=[sentence_meaning, meaning_status])
-        full_phrase_btn.click(fn=None, inputs=hanzi_input, outputs=None,
-                              js="""(phrase) => { if (!phrase) return;
-                                   window.speechSynthesis.cancel();
-                                   const u = new SpeechSynthesisUtterance(phrase);
-                                   u.lang='zh-CN'; u.rate=0.8;
-                                   window.speechSynthesis.speak(u); }""")
-        choice.change(_meaning_for_selection, inputs=[hanzi_input, choice], outputs=word_meaning)
-        word_input.change(lambda x: meaning_for(x) if x else '', inputs=word_input, outputs=word_meaning)
-        star_word_button.click(_star_word, inputs=[hanzi_input, choice, word_input, word_meaning],
-                               outputs=[star_status, saved_choice, starred_cards, starred_total])
-        star_sentence_button.click(_star_sentence, inputs=[hanzi_input, sentence_meaning],
-                                   outputs=[star_status, saved_choice, starred_cards, starred_total])
-        demo.load(_library_view, outputs=[saved_choice, starred_cards, starred_total])
-        refresh_btn.click(_library_view, outputs=[saved_choice, starred_cards, starred_total])
-        saved_choice.change(_saved_detail, inputs=saved_choice, outputs=saved_details)
-        review_btn.click(_reopen_saved, inputs=saved_choice,
-                         outputs=[hanzi_input, sentence_meaning, main_tabs, active_saved, starred_status])
-        unstar_btn.click(_remove_saved, inputs=saved_choice,
-                         outputs=[starred_status, saved_choice, starred_cards, starred_total])
+        next_button.click(next_character, inputs=[phrase,selected], outputs=focus_outputs)
+        back_to_phrase.click(show_phrase, outputs=focus_outputs)
+        whole_back.click(show_phrase, outputs=focus_outputs)
+        whole_button.click(whole_practice, outputs=focus_outputs)
+        try_button.click(lambda:gr.update(visible=True), outputs=recording_view)
+        check_button.click(_assess_and_track, inputs=[recording,phrase,selected,use_asr,active_saved], outputs=[feedback,chart,transcript])
+        retry_button.click(lambda:(None,'Ready when you are. Record one clear syllable.',None,''), outputs=[recording,feedback,chart,transcript])
+        review_button.click(review_whole, inputs=[whole_recording,use_asr], outputs=whole_feedback)
+        finish_button.click(complete, outputs=focus_outputs)
+        done_button.click(show_phrase, outputs=focus_outputs)
+        again_button.click(lambda text:focus(text,'0'), inputs=phrase, outputs=focus_outputs)
+        translate_button.click(translate, inputs=[phrase,meaning], outputs=[meaning,meaning_note,notice])
+        word_choice.input(lambda word:meaning_for(word or ''), inputs=word_choice, outputs=word_meaning)
+        save_word.click(keep_word, inputs=[phrase,word_choice,word_meaning], outputs=save_outputs)
+        star_character.click(keep_character, inputs=[phrase,selected], outputs=save_outputs)
+        for button in (save_phrase,complete_save):
+            button.click(lambda text,gloss:save_item('sentence',text,gloss), inputs=[phrase,meaning], outputs=save_outputs)
+        opening_events.append(reopen_button.click(reopen, inputs=saved_choice, outputs=lesson_outputs))
+        remove_button.click(remove, inputs=saved_choice, outputs=save_outputs)
+        demo.load(_library_view, outputs=[saved_choice,saved_cards,saved_total])
+        for button, text in ((listen_phrase,phrase),(listen_character,current_speech),(listen_whole,phrase)):
+            event = button.click(listen, inputs=[text,voice,speed,mode], outputs=[reference_audio,voice_status,fallback_text])
+            event.then(fn=None, inputs=[fallback_text,speed,voice_status], outputs=voice_status, js=BROWSER_SPEECH)
+        for event in opening_events:
+            event.then(fn=None, inputs=None, outputs=None, js="""() => {
+                const lesson = document.getElementById('lesson');
+                if (lesson && lesson.getClientRects().length) lesson.scrollIntoView({
+                    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block:'start'});
+            }""")
     return demo
 
+
 def launch_app():
-    """Local desktop by default; optional password-protected temporary HTTPS link.
-
-    This SQLite-backed prototype is SINGLE USER. Do not expose it without auth.
-    """
-    share = os.environ.get("HANPI_SHARE", "0") == "1"
-    host = os.environ.get("HANPI_HOST", "127.0.0.1")
-    remote = share or host not in ("127.0.0.1", "localhost")
-    username = os.environ.get("HANPI_DEMO_USER")
-    password = os.environ.get("HANPI_DEMO_PASSWORD")
+    """Local by default. Remote mode must retain authentication for shared SQLite data."""
+    share = os.environ.get('HANPI_SHARE','0') == '1'
+    host = os.environ.get('HANPI_HOST','127.0.0.1')
+    remote = share or host not in ('127.0.0.1','localhost')
+    username, password = os.environ.get('HANPI_DEMO_USER'), os.environ.get('HANPI_DEMO_PASSWORD')
     if remote and (not username or not password or len(password) < 10):
-        raise RuntimeError(
-            "Remote mode shares one local Starred library. Set HANPI_DEMO_USER "
-            "and HANPI_DEMO_PASSWORD (at least 10 characters) before enabling it."
-        )
-    auth = (username, password) if remote else None
-    port = int(os.environ.get("PORT", "7860"))
-    return build_app().launch(
-        server_name=host, server_port=port, share=share, auth=auth,
-        inbrowser=not share, show_error=True,
-        theme=gr.themes.Soft(primary_hue="orange", secondary_hue="slate", neutral_hue="stone"),
-        css=CSS,
-    )
+        raise RuntimeError('Remote mode shares one local Starred library. Set HANPI_DEMO_USER and HANPI_DEMO_PASSWORD (at least 10 characters) before enabling it.')
+    return build_app().launch(server_name=host, server_port=int(os.environ.get('PORT','7860')), share=share,
+                              auth=(username,password) if remote else None, inbrowser=not share, show_error=True,
+                              theme=gr.themes.Soft(primary_hue='orange', secondary_hue='stone', neutral_hue='stone',
+                                                   font=['Inter','ui-sans-serif','system-ui']).set(
+                                  color_accent='#dc644c', color_accent_soft='#f9e6db',
+                                  body_background_fill='#faf7f2', block_background_fill='#fffdfa',
+                                  input_background_fill='#fffdfa', block_label_background_fill='#fffdfa',
+                                  block_label_text_color='#78675a'), css=CSS)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     launch_app()

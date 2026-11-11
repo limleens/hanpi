@@ -21,8 +21,8 @@ The running Gradio server should print a temporary **https://...gradio.live** UR
 - Open the HTTPS link in iPhone Safari.
 - Sign in, then use the **Camera** source on the photo card to take a picture of Hanzi. Alternatively choose Upload to select a photo from your library.
 - Allow camera/microphone permissions in Safari when prompted.
-- Tap **Find Hanzi in photo**; review and correct the detected text.
-- Play a browser voice or choose the optional online natural voice, record an isolated syllable, and review the experimental pitch feedback.
+- Tap **Recognize characters** to open Results. Review/correct the detected text under **Edit text & translate**, then tap **Update phrase**.
+- Tap a character/pinyin to open Spotlight, then **Listen** and **Try it**. Record an isolated syllable and tap **Check my tone**. Settings selects Female/Male natural voice, speed, or browser speech; network failure falls back to browser speech where available.
 
 **Important:** Browser camera/microphone access requires a secure HTTPS origin outside localhost. Browser/speech behavior may vary across iOS versions.
 
@@ -30,7 +30,7 @@ The running Gradio server should print a temporary **https://...gradio.live** UR
 
 Your phone captures the image and voice in the browser, but the Python OCR and tone-analysis models run on the **Windows computer hosting the app**. Your computer and its Internet connection must remain available. This is not a standalone iPhone app.
 
-The optional natural Mandarin voices use Edge's online neural TTS service through the `edge-tts` package (LGPLv3, see upstream license). Chinese text goes to that third-party provider only when the user taps a natural voice button. The existing browser voice buttons remain available as a fallback.
+The optional natural Mandarin voices use Edge's online neural TTS service through the `edge-tts` package (LGPLv3, see upstream license). Chinese text goes to that third-party provider only when the user taps Listen with natural voice selected. The browser voice preference in Settings and automatic browser fallback remain available.
 
 ## 3. Security and saved vocabulary
 

@@ -34,7 +34,8 @@
 - [ ] Word-by-word speech playback highlighting.
 - [ ] More natural reference TTS with timed pronunciation tracking.
 - [ ] Tongue and mouth-shape visual diagrams for zh/ch/sh and retroflex sounds.
-- [ ] Dedicated iPhone experience and optional cloud sync for starred cards.
+- [x] Mobile-first Gradio web experience (hardware/iPhone field checks remain below).
+- [ ] Optional per-user cloud sync for starred cards.
 
 **Scope:** Hanpi can read longer Chinese text, but scoring is deliberately one syllable at a time. Do not claim verified full-sentence pronunciation grading or clinical accuracy.
 
@@ -48,3 +49,21 @@
 - [ ] Confirm the neural TTS service connects and returns human-sounding audio using a real Internet connection.
 - [ ] Test iPhone camera capture and microphone permissions over HTTPS.
 - [ ] Launch a permanent phone-accessible website using per-user saved vocabulary storage.
+
+
+## Hanpi v1 mobile-first redesign · 11 November 2026
+
+- [x] Cream/coral responsive shell, compact Hanpi wordmark/tagline, top search, Scan / Type / Speak / Saved bottom navigation.
+- [x] One shared Results surface for camera/upload OCR, typed/search text, optional ASR and reopened saved items.
+- [x] Editable OCR/text, aligned tone-coloured character/pinyin controls, honest dictionary provenance and key vocabulary.
+- [x] Spotlight selection with dimmed neighbours, sandhi-aware Listen, Try it, retry, Next and Back to phrase.
+- [x] Settings for Female/Male, 0.75×/1×/1.25× playback, browser fallback and optional Whisper; reduced-motion support.
+- [x] Experimental isolated-syllable feedback; pitch charts collapsed; no phoneme detection or whole-sentence tone score.
+- [x] Whole-phrase record/review/completion, SQLite word/character/phrase saving, reopening and removal.
+- [x] Baseline 32 tests before refactor; final 47 tests pass, including state, provider failure and practice-count regressions.
+- [x] CI-equivalent UI import/HTTP startup check and phone/desktop browser walkthrough; server-restart persistence checked with an isolated database.
+- [ ] Confirm live neural TTS and audible Mandarin browser playback on the user's device.
+- [ ] Test actual iPhone rear camera/mic over authenticated HTTPS and a real photo/voice recording.
+- [ ] Complete native-speaker feedback, submission write-up and a short demo before the authoritative portal deadline.
+
+See `docs/REDESIGN_QA.md` for exact automated results and browser evidence. The app remains a single-user, shared SQLite prototype; no permanent hosting or per-user cloud sync is claimed.

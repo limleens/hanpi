@@ -25,6 +25,13 @@ Default OCR, dictionary lookup and audio grading run locally; microphone recordi
 
 ## Natural Mandarin voice and mobile access
 
-An optional online neural voice feature uses [edge-tts](https://github.com/rany2/edge-tts), a third-party LGPLv3 Python client for Microsoft Edge's speech service. It offers Mandarin voices Xiaoxiao/Yunxi/Xiaoyi at configurable speeds, and sends the selected Chinese text online **only when the user clicks a neural speech button**. It requires an external network service and may be unavailable or subject to provider restrictions. The existing browser speech-synthesis option remains as fallback. No voice recording is sent to this TTS provider.
+An optional online neural voice feature uses [edge-tts](https://github.com/rany2/edge-tts), a third-party LGPLv3 Python client for Microsoft Edge's speech service. It offers Mandarin voices Xiaoxiao/Yunxi/Xiaoyi at configurable speeds, and sends the selected Chinese text online **only when the user taps Listen with natural voice selected**. It requires an external network service and may be unavailable or subject to provider restrictions. The existing browser speech-synthesis option remains as fallback. No voice recording is sent to this TTS provider.
 
 Temporary remote access uses a password-protected Gradio HTTPS share link. This is a single-user prototype: all signed-in visitors use the same SQLite Starred library on the hosting computer, not isolated cloud accounts. See docs/PHONE_DEMO.md.
+
+
+## v1 mobile redesign
+
+The interface now uses a shared Results view for OCR, typed/search text, optional speech input and saved items. Native Gradio character/pinyin controls open Spotlight practice. Natural speech is the default only after an explicit Listen action; browser fallback remains available in Settings. English search also requires an explicit online translation action. No phoneme detector or whole-sentence tone scorer was introduced.
+
+Regression checks cover source/meaning state, sandhi speech context, voice-service failures, optional ASR absence and saved practice counters. Browser QA uses generated Chinese text images and synthetic pitch audio. A browser speech callback check verifies wiring, not audible speech quality. Real recordings, native-speaker judgement, iPhone HTTPS camera/mic behavior and production hosting remain unverified. See docs/REDESIGN_QA.md.

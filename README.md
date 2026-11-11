@@ -1,6 +1,6 @@
 # Hanpi · 汉拼
 
-**See it. Say it. Learn it.** A desktop-first Mandarin pronunciation studio built for the Hiya Voice AI Challenge.
+**snap, translate, learn!** A mobile-first Mandarin learning app built with Python and Gradio for the Hiya Voice AI Challenge.
 
 Take or paste an image of Chinese writing, extract the Hanzi with local OCR, read colour-coded pinyin, hear reference speech, practice an isolated syllable through the microphone, and save vocabulary to your offline ★ Starred collection.
 
@@ -29,14 +29,36 @@ Python **3.11** recommended. On Windows PowerShell:
 git clone https://github.com/limleens/hanpi.git
 cd hanpi
 py -3.11 -m venv .venv
-.venvScriptsActivate.ps1
+.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python app.py
 ```
 
-On macOS/Linux, create a Python 3.11 virtual environment and run the same install/app commands. Open http://127.0.0.1:7860 in the browser. Microphone permission is needed for voice recording.
+On macOS/Linux:
 
-Pasting or dropping images works in the photo input. Correct any OCR mistakes in the editable Hanzi field before practising. The home screen starts with 你好 solely as a sample.
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python app.py
+```
+
+Open http://127.0.0.1:7860 in the browser. The UI uses Gradio 6; no Node build or GPU is needed. Phone camera/microphone access requires HTTPS, not your computer's localhost URL.
+
+## Scan → Results → Spotlight → Practice
+
+- **Scan**: upload, paste, drop an image, or select the rear-camera source. Tap **Recognize characters** to open Results. Use **Edit text & translate** to correct the OCR and **Update phrase** to apply it.
+- **Type**: enter Chinese and tap **Learn this phrase**, or use the search bar. English search offers an explicit **Translate English online** action; typing/searching alone sends no translation request.
+- **Results**: explore aligned, tone-coloured Hanzi/pinyin, an editable meaning and key vocabulary. Offline meanings are clearly labelled dictionary definitions or approximate word glosses. Fluent online translation is opt-in under **Edit text & translate**.
+- **Spotlight**: tap a character or its pinyin (keyboard selection also works). Other characters dim. **Listen** uses natural Mandarin by default and falls back to browser speech if the service fails. Sandhi examples retain phrase context.
+- **Try it**: record/upload one isolated syllable, then **Check my tone**. Retry, advance to the next character, or return to the phrase. The pitch chart stays inside **Pitch detail**.
+- **Try the whole phrase**: record and play your own attempt back. Optional transcription can show recognised text; it does not grade sentence tones. Finish with **Save phrase**, **Practice again**, or **Done**.
+- **Speak**: optional Whisper transcription produces editable Chinese that opens the same Results view. Without Whisper, use Type or Scan. Install `requirements-asr.txt` and allow the initial model download to enable it.
+- **Saved**: reopen a saved item for practice or remove its star. You can also keep a word or a selected character.
+
+**Settings** groups Female/Male neural voices, 0.75×/1×/1.25× speed, browser-voice preference, and optional practice transcription. Settings persist while navigating within the current session. Nothing generates online speech before you tap Listen.
+
+The bottom navigation stays accessible on phones; desktop uses the same calm, centred layout. Animations respect reduced-motion preferences.
 
 ## Try something other than 你好
 
@@ -55,7 +77,7 @@ For pronunciation, compare 妈 (mā), 麻 (má), 马 (mǎ), and 骂 (mà) as iso
 
 ## Starred collection
 
-Choose **★ Star word** or **★ Star sentence** to save Hanzi, written pinyin, spoken pinyin and a meaning. Visit the **Starred** tab to view vocabulary cards, reopen an entry for practice, or remove it. Successful practice attempts on saved items increase their counter.
+Choose **Save phrase**, **Keep a word → Save word**, or **Save this character** to store Hanzi, written/spoken pinyin and an editable meaning. Visit **Saved** to reopen an entry or remove it. A matching isolated-syllable pitch contour increases the active saved phrase’s practice counter; uncertain/mismatching attempts do not. Historical counts remain intact. This counter is not a validated pronunciation score.
 
 Storage: `data/hanpi_library.sqlite3`. The database survives restarts but is not synced across devices and is excluded from Git. To back up your collection, copy this file.
 
@@ -66,7 +88,7 @@ python -m pip install pytest
 python -m pytest -q
 ```
 
-Local testing covers dictionary logic, basic tone rules, SQLite memory and synthetic pitch contours. **Testing with actual Windows microphones, real Chinese photos, Mandarin voices, and native speakers remains necessary.** GitHub Actions includes tests and UI import smoke checks.
+Automated tests cover dictionary logic, tone rules, SQLite memory, synthetic pitch contours and redesign state/error paths. See [redesign QA](docs/REDESIGN_QA.md) for the browser walkthrough, screenshots and remaining checks. **Testing with actual Windows microphones, real Chinese photos, Mandarin voices, and native speakers remains necessary.** GitHub Actions includes tests and UI import smoke checks.
 
 ## Technical architecture and licensing
 
@@ -75,7 +97,7 @@ Local testing covers dictionary logic, basic tone rules, SQLite memory and synth
 - **pycccedict**: CC-CEDICT Mandarin-English vocabulary.
 - **Parselmouth/Praat**: acoustic pitch extraction and shape-based tone coaching.
 - **deep-translator**: optional, explicit online translation.
-- **Gradio**: desktop-first web UI and microphone capture.
+- **Gradio**: mobile-first shared Results/Spotlight UI, accessible character controls and microphone capture.
 - **SQLite**: persistent private starred library.
 
 The code uses packages through their documented APIs, instead of pasting in other projects' implementation code. Design and architecture were informed by [Tone.me](https://github.com/tone-me/tone-me) (MIT), [Mandarin Speech Coach](https://github.com/anton-dergunov/mandarin-speech-coach), [PyPinyin](https://github.com/mozillazg/python-pinyin), [RapidOCR](https://github.com/RapidAI/RapidOCR), and [pycccedict](https://github.com/patrickpei/pycccedict).
@@ -92,8 +114,8 @@ OCR and pitch analysis run locally. The optional online translation button share
 The Gradio app is now phone-responsive and already accepts webcam/camera images, image uploads, and pasted photos. See [iPhone HTTPS setup](docs/PHONE_DEMO.md) to launch a **temporary password-protected https://*.gradio.live** testing link from your Windows laptop. A publicly hosted/permanent website is not yet deployed.
 
 There are now **two reference voice choices**:
-- Browser voice: device/platform Mandarin speech, no extra setup; naturalness depends on device.
-- Optional neural voice: online service via [edge-tts](https://github.com/rany2/edge-tts) using Mandarin voices Xiaoxiao, Yunxi and Xiaoyi, with adjustable playback speed and an audio player. **Only generated when you click a neural voice button.** Neural output sends the requested text to a third-party speech service and can fail when offline; the browser voice stays available.
+- Natural voice (default): online [edge-tts](https://github.com/rany2/edge-tts) with Xiaoxiao (Female) or Yunxi (Male), configurable speed and an audio player. **Generated only when you tap Listen.** Selected text goes to a third-party service, which can fail or be unavailable.
+- Browser voice: choose it in Settings for device/platform Mandarin speech. It also serves as the fallback after a neural-service failure. Available Mandarin voices and audible playback depend on the device.
 
 Neural speech synthesis is not the same as speech transcription or automatic grading. Current pronunciation assessment still covers one isolated syllable at a time.
 

@@ -110,3 +110,37 @@ def translate_online(text: str) -> str:
     if not translated or not str(translated).strip():
         raise RuntimeError("No translation was returned.")
     return str(translated).strip()
+
+
+def key_vocabulary(text: str, limit: int = 6) -> list[tuple[str, str]]:
+    """A few distinct dictionary words; this never truncates the actual passage."""
+    hanzi = clean_hanzi(text)
+    words, seen, pos = [], set(), 0
+    while pos < len(hanzi) and len(words) < limit:
+        for size in range(min(16, len(hanzi) - pos), 0, -1):
+            word = hanzi[pos:pos + size]
+            meaning = _exact(word)
+            if meaning:
+                if word not in seen:
+                    words.append((word, meaning))
+                    seen.add(word)
+                pos += size
+                break
+        else:
+            pos += 1
+    return words
+
+
+def translate_to_chinese(text: str) -> str:
+    """Explicit opt-in English search; never called while typing or on page load."""
+    query = (text or '').strip()
+    if not query or len(query) > 2500:
+        raise ValueError('Enter an English word or phrase under 2,500 characters.')
+    try:
+        from deep_translator import GoogleTranslator
+        translated = GoogleTranslator(source='en', target='zh-CN').translate(query)
+    except Exception as exc:
+        raise RuntimeError('Online translation is unavailable. Try Chinese text or Scan instead.') from exc
+    if not clean_hanzi(translated):
+        raise RuntimeError('No Chinese translation was returned. Try Chinese text or Scan instead.')
+    return str(translated).strip()
