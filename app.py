@@ -245,6 +245,27 @@ def _assess_and_track(audio, text, selection, use_asr, saved_id):
     return feedback, chart, transcript
 
 
+
+def _lookup_phrase_ui(text, saved_id):
+    saved = get_entry(saved_id)
+    if saved and saved.hanzi == clean_hanzi(text):
+        return saved.meaning, "★ Meaning restored from your saved collection."
+    result = lookup_meaning(text)
+    if result.exact:
+        return result.text, f"📖 **{result.source}** · {result.note}"
+    if result.text:
+        return result.text, f"⚠️ **{result.source}** · {result.note}"
+    return "", f"ℹ️ {result.note}"
+
+
+def _translate_phrase_ui(text, previous):
+    try:
+        translated = translate_online(text)
+        return translated, "✅ Translated online. Review the result before starring."
+    except (ValueError, RuntimeError) as exc:
+        return previous, f"⚠️ {exc}"
+
+
 def build_app():
     with gr.Blocks(title="hanpi · see it, say it") as demo:
         gr.Markdown("""<div id='hero'><div id='eyebrow'>Voice-first language practice</div>
@@ -272,6 +293,7 @@ def build_app():
                         target_panel = gr.HTML(_target_panel("你好", "0")[0])
                         current_char = gr.Textbox(value="你好", visible=False)
                         hear_btn = gr.Button("🔊 Hear an example (in context for sandhi)", variant="secondary")
+                        full_phrase_btn = gr.Button("🔊 Hear entire phrase", variant="secondary")
                         speech = gr.Audio(sources=["microphone", "upload"], type="numpy", format="wav",
                                           label="Record pronunciation (one syllable)")
                         with gr.Accordion("Optional: text transcription", open=False):
@@ -292,7 +314,10 @@ def build_app():
 
                 gr.Markdown("### Pinyin & tone colours")
                 tone_cards = gr.HTML(_tones_markup("你好"))
-                sentence_meaning = gr.Textbox(label="English meaning (editable)", value="Hello", placeholder="Add a meaning for your phrase")
+                sentence_meaning = gr.Textbox(label="Dictionary meaning / translation (editable)", value="Hello", lines=2)
+                meaning_status = gr.Markdown("📖 Sample vocabulary. Check your chosen text for a dictionary meaning.")
+                translate_button = gr.Button("🌐 Translate entire text online (optional)", variant="secondary")
+                gr.Markdown("*Clicking translation shares the text with an external service; dictionary lookup is offline.*")
                 gr.Markdown("### ☆ Add to your collection")
                 with gr.Row():
                     with gr.Column():
