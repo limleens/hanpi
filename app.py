@@ -187,8 +187,8 @@ def build_app():
         origin = gr.State('Scan')
         settings_open = gr.State(False)
         with gr.Row():
-            gr.HTML('<header id="brand"><div class="brand-mark" aria-hidden="true">汉</div>'
-                    '<div><div class="wordmark">hanpi</div><div class="tagline">snap, translate, learn!</div></div></header>')
+            gr.HTML('<header id="brand"><div class="brand-mark" aria-hidden="true"><span class="brand-glyph">汉</span><span class="brand-tone">ˇ</span></div>'
+                    '<div><div class="wordmark">hanpi<span class="wordmark-dot">.</span></div><div class="tagline">snap, translate, learn!</div></div></header>')
             settings_toggle = gr.Button('Settings', scale=0, min_width=88, elem_id='settings-toggle')
         with gr.Row(elem_id='search-row'):
             search = gr.Textbox(label='Search Chinese or English', placeholder='Search Chinese or English…',
@@ -206,7 +206,11 @@ def build_app():
                         'Saved vocabulary is stored on this host, shared across authenticated sessions. It is not cloud sync.', elem_classes='microcopy')
 
         with gr.Column() as scan_view:
-            gr.HTML(_heading('A LITTLE CHINESE, EVERY DAY', 'What will you discover?', 'See Chinese. Hear it. Say it with confidence.'))
+            gr.HTML('<section class="welcome-panel">' +
+                    _heading('YOUR NEXT LITTLE DISCOVERY', 'Chinese is everywhere.', 'Snap a sign, find its meaning, then say it out loud.') +
+                    '<div class="hanpi-friend" aria-hidden="true"><span class="friend-eye friend-eye-left"></span>'
+                    '<span class="friend-eye friend-eye-right"></span><span class="friend-smile"></span>'
+                    '<span class="friend-note">nǐ hǎo!</span><span class="friend-spark">✳</span></div></section>')
             with gr.Column(elem_classes='surface'):
                 photo = gr.Image(label='Scan Chinese', type='pil', sources=['upload', 'webcam', 'clipboard'], height=245,
                                  elem_id='photo', webcam_options=gr.WebcamOptions(mirror=False, constraints={'facingMode':'environment'}))
