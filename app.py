@@ -340,7 +340,7 @@ def build_app():
                     review_btn = gr.Button("🎙 Practise this again", variant="primary")
                     refresh_btn = gr.Button("↻ Refresh")
                     unstar_btn = gr.Button("Remove star", variant="secondary")
-                starred_status = gr.Markdown("Stored offline in hanpi/data/hanpi_library.sqlite3.")
+                starred_status = gr.Markdown("Stored offline in data/hanpi_library.sqlite3.")
 
         ocr_btn.click(_read_image, inputs=photo, outputs=[hanzi_input, ocr_message])
         updated = hanzi_input.change(_sync_text, inputs=hanzi_input, outputs=[choice, chooser_note])
@@ -357,7 +357,15 @@ def build_app():
                          outputs=[judgement, pitch_plot, transcription])
         hanzi_input.change(_tones_markup, inputs=hanzi_input, outputs=tone_cards)
         hanzi_input.change(lambda s: _meaning_for_selection(s, "0"), inputs=hanzi_input, outputs=word_meaning)
-        hanzi_input.change(_suggest_meaning, inputs=[hanzi_input, active_saved], outputs=sentence_meaning)
+        hanzi_input.change(_lookup_phrase_ui, inputs=[hanzi_input, active_saved], outputs=[sentence_meaning, meaning_status])
+        translate_button.click(_translate_phrase_ui, inputs=[hanzi_input, sentence_meaning],
+                               outputs=[sentence_meaning, meaning_status])
+        full_phrase_btn.click(fn=None, inputs=hanzi_input, outputs=None,
+                              js="""(phrase) => { if (!phrase) return;
+                                   window.speechSynthesis.cancel();
+                                   const u = new SpeechSynthesisUtterance(phrase);
+                                   u.lang='zh-CN'; u.rate=0.8;
+                                   window.speechSynthesis.speak(u); }""")
         choice.change(_meaning_for_selection, inputs=[hanzi_input, choice], outputs=word_meaning)
         word_input.change(lambda x: meaning_for(x) if x else '', inputs=word_input, outputs=word_meaning)
         star_word_button.click(_star_word, inputs=[hanzi_input, choice, word_input, word_meaning],
