@@ -1,3 +1,11 @@
+# Forgiving isolated-syllable practice · 12 November
+
+- Baseline: 122 tests. Current full suite: **148 passed**.
+- A one-character drill now accepts a matching base syllable with at most one trailing le/er or known conversational ending. Tests cover 算了, 算儿/算兒, suffix spelling variants, and differing ASR lexical-tone spelling such as 酸了 for target 蒜. Raw recognized text/pinyin is preserved; the ignored ending is labelled explicitly.
+- The actual isolated F0 result still determines whether the expected tone shape matches. Incorrect/unclear measured pitch does not become a success. Polyphonic reading overrides and sandhi are retained. Arbitrary content-word suffixes, longer strings, different initial syllables and extra words in full sentences remain distinct.
+- Updated `scripts/homophone_smoke.cjs`: actual app startup and four phone-width/dark-OS flows, controlled ASR outputs 算/算了/算儿/酸了, real Praat processing of a synthetic falling contour, visible Continue and completion. **Recognition is mocked in these cases**; the user's actual recording was not available. Earlier real-model ASR evidence is retained below.
+- The speech model, decoder and target-unprompted recognition were not changed. This is transparent, bounded practice tolerance, not improved ASR accuracy or verified phoneme detection.
+
 # Homophone feedback correction · 12 November
 
 - Baseline: 105 tests. Updated suite: **122 passed**. Reproduced target 蒜 versus transcript 算 from the user's screenshot, with both readings suàn and falling pitch.

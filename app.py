@@ -15,7 +15,7 @@ from hanpi_core.ocr import recognize_image
 from hanpi_core.dictionary import dictionary_status
 from hanpi_core.translation import sentence_translation
 from hanpi_core.search import search_english, search_pinyin
-from hanpi_core.comparison import comparison_view, compare_transcript, transcript_breakdown, readings_match
+from hanpi_core.comparison import comparison_view, compare_transcript, transcript_breakdown, readings_match, match_isolated_syllable
 from hanpi_core.asr import prepare_model, backend_name
 from hanpi_core.gloss import meaning_for, lookup_meaning, translate_online, translate_to_chinese
 from hanpi_core.library import save_entry, list_entries, get_entry, delete_entry, mark_practiced
@@ -159,13 +159,17 @@ def _practice_result(audio, text, selected_index, use_asr=False, reading=None):
         if transcript:
             result = compare_transcript(syllable.hanzi, transcript)
             homophone = not result.matches and readings_match(syllable.hanzi,transcript,syllable.spoken_pinyin)
-            word_matched = result.matches or homophone
+            syllable_match = match_isolated_syllable(syllable.hanzi,transcript,syllable.spoken_pinyin)
+            word_matched = result.matches or syllable_match.matches
             heard_reading = ' '.join(s.written_pinyin for s in get_syllables(transcript))
             heading = ('Words match!' if result.matches else 'Sounds match!' if homophone else
+                       'Syllable matches!' if syllable_match.matches else
                        'Similar syllable, different spelling. Hanpi may have misheard.' if result.sound_alikes and not result.flags and not result.additions else
                        'Let’s try that word again.')
             word_feedback = (f'### {heading}\n\n**You said:** {escape(transcript)} · {escape(heard_reading)}'
                              f'\n\n**Target:** {syllable.hanzi} · {syllable.spoken_pinyin}\n\n')
+            if syllable_match.ignored_ending:
+                word_feedback += '*Extra ending ignored for this drill.*\n\n'
         else:
             import logging
             logging.getLogger(__name__).warning('Speech recognition returned no transcript: %s', recognition_status)

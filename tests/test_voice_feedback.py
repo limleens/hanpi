@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 import app
-from hanpi_core.comparison import compare_transcript, comparison_view, transcript_breakdown, readings_match
+from hanpi_core.comparison import compare_transcript, comparison_view, transcript_breakdown, readings_match, match_isolated_syllable
 
 
 def pitch(monkeypatch, tone):
@@ -145,3 +145,54 @@ def test_sentence_homophone_is_positive_without_claiming_matching_text():
     assert 'Same pronunciation, different characters.' in html
     assert not compare_transcript('蒜香烧肉','算乡烧肉').matches
     assert 'Word check, not a tone score' in html
+
+
+@pytest.mark.parametrize('heard',['算了','蒜了','算儿','算兒','酸了','蒜啊','蒜呢','蒜吧','算嘛','蒜啦','算而','算二','蒜乐'])
+def test_short_extra_endings_do_not_fail_isolated_practice(monkeypatch,heard):
+    pitch(monkeypatch,4)
+    monkeypatch.setattr(app,'_transcribe',lambda audio:(heard,''))
+    feedback,_,transcript,matched=app._practice_result(object(),'蒜','0',True)
+    assert 'Syllable matches!' in feedback and matched
+    assert 'Extra ending ignored' in feedback
+    assert f'**You said:** {heard}' in feedback and transcript==heard
+    assert 'falling (fourth tone) — matches the target' in feedback
+
+
+@pytest.mark.parametrize('heard',['算头','蒜人','算了吧','我来算了','算算','双了','了算',''])
+def test_leniency_is_not_an_arbitrary_substring_match(heard):
+    result=match_isolated_syllable('蒜',heard)
+    assert not result.matches and result.ignored_ending==''
+
+
+@pytest.mark.parametrize('detected',[1,None])
+def test_extra_ending_does_not_fabricate_a_pitch_match(monkeypatch,detected):
+    pitch(monkeypatch,detected)
+    monkeypatch.setattr(app,'_transcribe',lambda audio:('算了',''))
+    feedback,_,_,matched=app._practice_result(object(),'蒜','0',True)
+    assert 'Syllable matches!' in feedback and not matched
+    assert 'matches the target' not in feedback
+
+
+def test_isolated_syllable_uses_acoustic_pitch_not_asr_spelling_tone(monkeypatch):
+    pitch(monkeypatch,4)
+    monkeypatch.setattr(app,'_transcribe',lambda audio:('酸',''))
+    feedback,_,transcript,matched=app._practice_result(object(),'蒜','0',True)
+    assert 'Syllable matches!' in feedback and matched
+    assert '**You said:** 酸 · suān' in feedback and transcript=='酸'
+    assert 'falling (fourth tone) — matches the target' in feedback
+    assert not readings_match('蒜','酸')
+
+
+def test_forgiving_match_keeps_polyphonic_selection_and_sandhi(monkeypatch):
+    assert match_isolated_syllable('行','航了','hang2').matches
+    assert not match_isolated_syllable('行','航了','xing2').matches
+    pitch(monkeypatch,2)
+    monkeypatch.setattr(app,'_transcribe',lambda audio:('泥了',''))
+    feedback,_,_,matched=app._practice_result(object(),'你好','0',True)
+    assert '**Target:** 你 · ní' in feedback and matched
+
+
+def test_sentence_comparison_still_reports_extra_words():
+    assert not match_isolated_syllable('我喜欢咖啡','我喜欢咖啡了').matches
+    assert not readings_match('我喜欢咖啡','我喜欢咖啡了')
+    assert compare_transcript('我喜欢咖啡','我喜欢咖啡了').additions==('了',)

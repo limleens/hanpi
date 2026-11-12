@@ -36,6 +36,36 @@ def canonical_char(char):
 
 
 @dataclass(frozen=True)
+class SyllableMatch:
+    matches: bool
+    ignored_ending: str = ''
+
+
+def match_isolated_syllable(expected,recognized,reading=None):
+    """A forgiving TEXT check for one-syllable practice, never sentence grading.
+
+    ASR spelling cannot reliably establish an isolated sound's tone. Compare
+    the base syllable here; the acoustic coach checks pitch independently.
+    Allow one trailing conversational particle, but no arbitrary extra word.
+    Preserve the recognizer's original transcript in all cases.
+    """
+    from pypinyin.contrib.tone_convert import to_normal
+    from unicodedata import normalize
+    target=get_syllables(expected,reading)
+    heard=get_syllables(recognized)
+    if len(target)!=1 or len(heard) not in (1,2):
+        return SyllableMatch(False)
+    def base(syllable):
+        return to_normal(normalize('NFC',syllable.spoken_pinyin))
+    ending=heard[1].hanzi if len(heard)==2 else ''
+    particle=canonical_char(ending) in {'了','儿','啊','呀','呢','吧','嘛','吗','啦','呐','哦'} if ending else False
+    if ending and not particle and base(heard[1]) not in {'le','er'}:
+        return SyllableMatch(False)
+    matches=base(target[0])==base(heard[0])
+    return SyllableMatch(matches,ending if matches else '')
+
+
+@dataclass(frozen=True)
 class Comparison:
     expected: str
     recognized: str

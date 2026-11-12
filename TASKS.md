@@ -137,3 +137,12 @@ See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and t
 - [x] Sentence feedback explains same pronunciation/different characters without claiming text equality or measured sentence tones.
 - [x] 122 tests pass; phone browser reproduces the screenshot using a declared ASR stub and actual Praat processing of synthetic falling pitch.
 - [ ] Recheck on the user's real voice/phone; the screenshot did not include an audio file.
+
+
+## Forgiving isolated-syllable practice · 12 November
+
+- [x] Accept a matching base syllable followed by one short le/er or conversational ending, including 算了/算儿 for 蒜.
+- [x] Compare isolated syllable identity independently of ASR-selected lexical tone; keep acoustic pitch checking and the unmodified full transcript separate.
+- [x] Show Syllable matches and an explicit ignored-ending note; keep sentence comparison and arbitrary extra-word rejection intact.
+- [x] 148 tests plus phone-browser checks for 算, 算了, 算儿 and 酸了, with real Praat processing of synthetic falling pitch and declared ASR stubs.
+- [ ] Validate the recognizer on the user's original recording; no audio file was attached. No model accuracy improvement or sentence tone grading is claimed.
