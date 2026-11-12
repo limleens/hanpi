@@ -153,3 +153,17 @@ See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and t
 - [x] Remove the assertion that the repository is private; access guidance now supports repository checkout or source ZIP.
 - [x] Align AI disclosure and submission checklist with intentionally published demo credentials.
 - [x] Validate README content and diff formatting. Live URL verification from the cloud was blocked by its proxy; repository visibility and application behavior were not changed.
+
+
+## Overnight speech accuracy and guided tutor · 12 November
+
+- [x] Review SenseVoice/FunASR, Silero VAD, official sherpa-onnx examples and model terms; document sources and a focused baseline comparison.
+- [x] Bundle a checksum-verified MIT Silero detector; reject non-speech before decoding, preserve short/quiet speech, pad Mandarin initials/tails and retain internal pauses/repetitions.
+- [x] Add recommended local int8 SenseVoice (one-time ~163 MB download), pinned archive/file hashes, corruption repair and explicit/automatic profiles. Preserve original compact timing for compatibility.
+- [x] Stop reference/tutor playback when recording begins; block late playback/queued examples and disable duplicate check actions during capture/automatic analysis.
+- [x] Implement an original SVG tiger and evidence-led spoken dialogue: encouragement, concrete observed/target pitch tips, queued Mandarin examples, mute/replay and working Next/Try phrase actions.
+- [x] Keep original OCR/dictionary/TTS/SQLite/isolated F0 modules and Python/Gradio; no target priming, silent transcript deduplication, sentence-tone/phoneme grades or new paid API.
+- [x] 172 pytest cases; model/VAD diagnostic; phone/desktop OCR/ASR/Saved/Back walkthroughs; 320/390/1280px auth; actual ASR through Chromium fake-microphone capture using a public human WAV. Speech-output calls stubbed for ordering/mute tests.
+- [x] Focused development regression: old pipeline 11/14, filtered compact 11/14, raw SenseVoice 9/14, filtered SenseVoice 14/14. This is one human crop plus controlled perturbations, not a general accuracy study.
+- [ ] Re-test the user's original microphone/accent and audible iPhone speech/autoplay; no original recording was attached.
+- [ ] Host pulls changes, prepares the improved model, restarts and updates the live demo URL. PR #2 remains unmerged for user review.

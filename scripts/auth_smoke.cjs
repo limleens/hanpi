@@ -2,7 +2,7 @@
 const {chromium}=require('playwright');
 const {spawn}=require('node:child_process');
 const {randomBytes}=require('node:crypto');
-const net=require('node:net'),fs=require('node:fs'),path=require('node:path');
+const net=require('node:net'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const assert=require('node:assert/strict');
 
 (async()=>{
@@ -16,7 +16,7 @@ import os, app
 app.build_app().launch(server_name='127.0.0.1',server_port=${port},inbrowser=False,
  auth=('qa-demo',os.environ['HANPI_AUTH_QA_PASSWORD']),auth_message=app.AUTH_MESSAGE,
  theme=app.make_theme(),css=app.CSS)
-`],{env:{...process.env,HANPI_AUTH_QA_PASSWORD:password,MPLBACKEND:'Agg',MPLCONFIGDIR:process.env.MPLCONFIGDIR||'/tmp/hanpi-auth-mpl',GRADIO_ANALYTICS_ENABLED:'False'}});
+`],{env:{...process.env,HANPI_AUTH_QA_PASSWORD:password,HANPI_LIBRARY_PATH:path.join(fs.mkdtempSync(path.join(os.tmpdir(),'hanpi-auth-')),'library.sqlite3'),MPLBACKEND:'Agg',MPLCONFIGDIR:process.env.MPLCONFIGDIR||'/tmp/hanpi-auth-mpl',GRADIO_ANALYTICS_ENABLED:'False'}});
  let log='';child.stdout.on('data',x=>log+=x);child.stderr.on('data',x=>log+=x);
  let browser;
  try{

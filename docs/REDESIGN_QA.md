@@ -1,3 +1,14 @@
+# Overnight speech/tutor validation · 12 November
+
+- Baseline before this pass: **148 tests passed**. New suite: **172 tests passed**, including actual bundled VAD/noise inference, endpoint preservation, profile changes, download/hash repair, and evidence-led coaching.
+- Real local model preparation and `check_environment.py --strict --asr` load SenseVoice plus the bundled detector. No paid API/GPU/new Python dependency is required.
+- [Focused benchmark and source details](VOICE_RESEARCH.md): old compact 11/14, filtered compact 11/14, raw SenseVoice 9/14, filtered SenseVoice 14/14. These are development cases from one public word crop plus controlled noise/repetition, not independent ASR accuracy. Full results: [speech-v2.json](benchmarks/speech-v2.json).
+- Native Chromium microphone capture used its fake device fed a public human WAV, with actual Gradio recording/stop, VAD and ASR. It returned one 对 once. A separate tap was rejected before decoding. This is **not a real microphone** test.
+- Tutor/browser regression verifies automatically spoken captions after actions, English→Mandarin example queuing, mute/manual replay, pausing playback on mic start, cancellation of late queued examples, disabled check during recording, direct Try phrase, and visible Continue. Speech-synthesis calls are **stubbed**, not audible-quality evidence.
+- Phone/dark-OS and desktop walkthroughs pass real OCR, full translation, character selection, retry/Back, saved persistence, single-word and sentence ASR, transcript breakdown and no browser errors. Authentication at 320/390/1280px still rejects bad credentials, protects config and retains valid sessions; fonts actually load.
+- Screenshots include `microphone-tutor.png`, `noise-retry.png`, the primary phone-flow snapshots and auth snapshots in local QA artifacts. Hǔ is original SVG; Figma tools were unavailable and no external mascot art was copied.
+- The user's original audio, real iPhone acoustics/voice availability/autoplay and native-speaker judgement remain manual. The F0 coach is still experimental and isolated-syllable only. No sentence tone or phoneme detection is claimed.
+
 # Forgiving isolated-syllable practice · 12 November
 
 - Baseline: 122 tests. Current full suite: **148 passed**.

@@ -19,10 +19,13 @@ for name in ('gradio','pycccedict','rapidocr','onnxruntime','sherpa-onnx','openc
     except importlib.metadata.PackageNotFoundError: versions[name]='NOT INSTALLED'
 speech={}
 if args.asr:
-    from hanpi_core.asr import _model,backend_name
+    from hanpi_core.asr import _model,backend_name,engine_profile
     try:
-        _model()
-        speech={'backend':backend_name(),'ready':True}
+        _model(engine_profile() if backend_name()=='sherpa-onnx' else None)
+        from hanpi_core.speech import detector_config
+        import sherpa_onnx
+        sherpa_onnx.VoiceActivityDetector(detector_config(),buffer_size_in_seconds=2)
+        speech={'backend':backend_name(),'profile':engine_profile() if backend_name()=='sherpa-onnx' else 'whisper','speech_detection':True,'ready':True}
     except Exception as exc:
         speech={'ready':False,'error':str(exc)}
 print(json.dumps(dict(speech=speech,interpreter=sys.executable,python=sys.version,packages=versions,

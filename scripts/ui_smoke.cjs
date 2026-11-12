@@ -102,7 +102,7 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     await button('Check my voice').click();
     await page.locator('#feedback').filter({hasText:'clearer sound'}).waitFor();
     await button('Try again').click();
-    await page.locator('#feedback').filter({hasText:'Ready when you are'}).waitFor();
+    await page.locator('#tutor-card').filter({hasText:'Ready when you are'}).waitFor();
     await button('Continue →').click();
     await page.waitForFunction(() => document.querySelector('.focus-hanzi')?.textContent === '啡');
     await button('Back to phrase').click();
@@ -138,7 +138,8 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     await recording.getByRole('button', {name:'Upload file', exact:true}).click();
     await recording.locator('input[type=file]').setInputFiles(path.join(artifacts, 'tone4.wav'));
     await button('Check my voice').click();
-    await page.locator('#feedback').filter({hasText:'Your tone shape looks close'}).waitFor();
+    await page.locator('#feedback').filter({hasText:/You said:|clear speech|background sound/}).waitFor();
+    assert(!/Words match!|Sounds match!|Syllable matches!/.test(await page.locator('#feedback').innerText()));
     await snapshot('mobile-feedback');
     await button('Continue →').click();
     await page.getByText('Nice practice session!', {exact:true}).waitFor();
@@ -148,7 +149,7 @@ sf.write(folder/'tone4.wav',env*(.28*np.sin(phase)+.1*np.sin(2*phase)),sr)
     await page.getByText('Record your attempt first. You can play it back and choose a character to practise.', {exact:true}).waitFor();
     await button('Finish practice').click();
     await page.getByText('Nice practice session!', {exact:true}).waitFor();
-    console.log('PASS synthetic audio upload -> matching pitch feedback -> completion; whole-phrase review has no fake grade');
+    console.log('PASS synthetic voiced sound -> no false word match -> completion; whole-phrase review has no fake grade');
 
     await navigate('Saved');
     const card = page.locator('.library-card').filter({hasText:'骂'});

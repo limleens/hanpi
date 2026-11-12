@@ -12,7 +12,7 @@ A small design-language update on top of the working mobile-first UI. The app's 
 - Display/brand: **Fredoka** (rounded, cheerful, friendly at mobile sizes).
 - UI/body: **Plus Jakarta Sans** (from the PathPilot Figma style guide).
 - Hanzi: system Chinese fonts (Noto Sans SC, Microsoft YaHei, PingFang SC fallback) so Chinese characters remain clear.
-- Google Fonts provides the Latin families online; local system fallbacks keep the app readable offline. No font files are committed.
+- Fredoka and Plus Jakarta Sans Latin variable fonts are bundled with their SIL Open Font licences and embedded in CSS, including sign-in; no Google Fonts request is required.
 
 ## Palette and behaviour
 - Ink: deep navy \`#17364C\`, echoing the Prussian blue in PathPilot.
@@ -39,3 +39,8 @@ A small design-language update on top of the working mobile-first UI. The app's 
 - [ ] Verify OCR → Results → Spotlight → Recording → Feedback → Saved flow still works.
 - [ ] If Google Fonts cannot be reached, verify fallback fonts still look acceptable.
 - [ ] Keep the original real-device limitations in the QA report; existing screenshots predate the style update.
+
+
+## Guided speaking buddy
+
+Hǔ is an original SVG tiger, drawn for Hanpi with AI coding assistance. It is not the PathPilot tiger or a copied Figma/Duolingo asset. Compact captions accompany actual transcript/pitch feedback. Happy/guide states follow available evidence, and speaking animation follows browser speech events. Spoken tips can be muted and replayed; reduced-motion preferences disable animation. The stable cream/orange/teal/navy palette and existing input/learning flow remain.

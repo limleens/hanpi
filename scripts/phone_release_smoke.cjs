@@ -35,7 +35,7 @@ if(process.env.HANPI_WORD_SAMPLE){
  await btn('Continue →').click();await p.getByText('Nice practice session!',{exact:true}).waitFor();
  await p.locator('#bottom-nav').getByRole('button',{name:'Type',exact:true}).click();
 }
-const target='对我做了说明那么我想说的是大家如果对我的研究感兴趣呢';
+const target=(process.env.HANPI_EXPECTED_SENTENCE||'对我做了介绍啊那么我想说的是呢大家如果对我的研究感兴趣呢').replace('介绍','说明');
 await p.getByRole('textbox',{name:'Chinese phrase',exact:true}).fill(target);await btn('Learn this phrase').click();await btn('Try the whole phrase').click();
 await btn('Check my words').waitFor();assert.equal(await btn('Compare corrected transcript').count(),0);
 assert.equal(await btn('Prepare Mandarin speech model (~75 MB)').count(),0);

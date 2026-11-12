@@ -14,6 +14,67 @@ MODEL_URL=f'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/{
 MODEL_SHA256='2cbd71b640d9c37d3784f29367333a4577b0398b62e9deeed418170b081cba8b'
 FILES={'encoder':'encoder-epoch-99-avg-1.int8.onnx','decoder':'decoder-epoch-99-avg-1.int8.onnx',
        'joiner':'joiner-epoch-99-avg-1.int8.onnx','tokens':'tokens.txt'}
+ACCURATE_ID='sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17'
+ACCURATE_SHA256='7d1efa2138a65b0b488df37f8b89e3d91a60676e416f515b952358d83dfd347e'
+ACCURATE_FILES={
+    'model.int8.onnx':'c71f0ce00bec95b07744e116345e33d8cbbe08cef896382cf907bf4b51a2cd51',
+    'tokens.txt':'f449eb28dc567533d7fa59be34e2abca8784f771850c78a47fb731a31429a1dc',
+}
+
+
+def accurate_available(root):
+    return all((Path(root)/ACCURATE_ID/name).is_file() for name in ACCURATE_FILES)
+
+
+def install_accurate(root):
+    """Install pinned SenseVoice weights; no remote Python code is executed."""
+    root=Path(root);root.mkdir(parents=True,exist_ok=True)
+    target=root/ACCURATE_ID
+    if all((target/name).is_file() and digest(target/name)==expected
+           for name,expected in ACCURATE_FILES.items()):
+        return target
+    archive=root/f'{ACCURATE_ID}.tar.bz2'
+    if not archive.is_file() or digest(archive)!=ACCURATE_SHA256:
+        with tempfile.NamedTemporaryFile(dir=root,suffix='.download',delete=False) as output:
+            temporary=Path(output.name)
+        try:
+            url=f'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/{ACCURATE_ID}.tar.bz2'
+            with requests.get(url,stream=True,timeout=(15,60)) as response:
+                response.raise_for_status()
+                with temporary.open('wb') as output:
+                    for chunk in response.iter_content(1024*1024):
+                        output.write(chunk)
+            if digest(temporary)!=ACCURATE_SHA256:
+                raise RuntimeError('SenseVoice model checksum mismatch; nothing was installed.')
+            os.replace(temporary,archive)
+        finally:
+            temporary.unlink(missing_ok=True)
+    with tempfile.TemporaryDirectory(dir=root) as folder:
+        staged=Path(folder)
+        with tarfile.open(archive,'r:bz2') as package:
+            for name,expected in ACCURATE_FILES.items():
+                member=package.getmember(f'{ACCURATE_ID}/{name}')
+                if not member.isfile():
+                    raise RuntimeError('The model archive contains an invalid entry.')
+                with package.extractfile(member) as source,(staged/name).open('wb') as output:
+                    shutil.copyfileobj(source,output)
+                if digest(staged/name)!=expected:
+                    raise RuntimeError('Extracted model checksum mismatch; nothing was installed.')
+        target.mkdir(exist_ok=True)
+        for name in ACCURATE_FILES:
+            os.replace(staged/name,target/name)
+    return target
+
+
+def load_accurate(root):
+    import sherpa_onnx
+    if not accurate_available(root):
+        raise RuntimeError('Prepare the improved speech model with python scripts/prepare_asr.py once.')
+    target=Path(root)/ACCURATE_ID
+    return sherpa_onnx.OfflineRecognizer.from_sense_voice(
+        model=str(target/'model.int8.onnx'),tokens=str(target/'tokens.txt'),
+        num_threads=min(4,os.cpu_count() or 1),sample_rate=16000,language='zh',
+        use_itn=False,provider='cpu')
 
 
 def digest(path):

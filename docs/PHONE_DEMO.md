@@ -90,3 +90,22 @@ After pulling the final phone fix, stop the old process with Ctrl+C and run app.
 Visitors enter the same `HANPI_DEMO_USER` and `HANPI_DEMO_PASSWORD` you set on the hosting computer. They do not create an account. Give challenge reviewers these details with the private submission/demo instructions. The browser normally stays signed in after refreshing; a new browser or private window needs the login again. The landing page never displays or embeds the credentials.
 
 Sign-in uses Hanpi's cream/navy/orange card styling, Fredoka headings and Plus Jakarta Sans controls. Both fonts are bundled, including before login, so Google Fonts access is unnecessary. Authentication and the shared-library behavior are unchanged.
+
+
+## Update to improved speech recognition and Hǔ
+
+Use the same PowerShell window so your existing share/login environment variables remain set. Stop the old server with Ctrl+C, then:
+
+```powershell
+git pull --ff-only origin feat/mobile-first-redesign
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe scripts/prepare_asr.py
+.\.venv\Scripts\python.exe scripts/check_environment.py --strict --asr
+.\.venv\Scripts\python.exe app.py
+```
+
+Preparation downloads the recommended SenseVoice model once (about 163 MB). The small speech detector is bundled. The diagnostic should report `profile: accurate` and `speech_detection: true`. Existing compact models still work; to explicitly use one, set `$env:HANPI_ASR_PROFILE = "compact"` before launching. Do not use that setting when testing the improved profile.
+
+Open the **new** HTTPS link and update README's Live demo URL if the share address changes. The live laptop process does not update itself when the GitHub branch changes.
+
+In practice, Hǔ gives spoken guidance after your actions and offers Continue or Try phrase. Spoken tips mutes automatic narration; Hear tip replays it and may be needed when iOS blocks automatic playback. Corrective examples use browser Mandarin speech; the Listen buttons retain natural online reference voices. Recording pauses app playback to reduce self-echo. Test actual microphone permission, voice clarity and audible examples on your phone.
