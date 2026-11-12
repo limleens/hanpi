@@ -7,6 +7,23 @@ from html import escape
 from .text import clean_hanzi,get_syllables
 
 
+def readings_match(expected,recognized,reading=None):
+    """Compare contextual pinyin INCLUDING tone; not an acoustic diagnosis.
+
+    A selected isolated target can supply its spoken/dictionary reading so
+    sandhi and alternative polyphonic readings survive the comparison.
+    """
+    from pypinyin.contrib.tone_convert import to_tone3
+    from unicodedata import normalize
+    target=get_syllables(expected,reading)
+    heard=get_syllables(recognized)
+    if not target or len(target)!=len(heard):
+        return False
+    def key(syllable):
+        return to_tone3(normalize('NFC',syllable.spoken_pinyin),neutral_tone_with_five=True)
+    return all(key(a)==key(b) for a,b in zip(target,heard))
+
+
 @lru_cache(maxsize=1)
 def _converter():
     from opencc import OpenCC
@@ -79,8 +96,14 @@ def comparison_view(expected,recognized,include_matches=False):
     text=''.join(f'<mark class="word-difference" title="{escape(result.flags[i])}">{escape(c)}</mark>'
                  if i in result.flags else escape(c) for i,c in enumerate(result.expected))
     additions='; '.join(result.additions)
-    summary=('Words match. Nice work!' if result.matches else
-             ('These sound similar. Hanpi may have chosen the wrong spelling.' if result.sound_alikes and not result.flags and not result.additions else 'Try the highlighted words. Speech recognition can also make mistakes.'))
+    if result.matches:
+        summary='Words match. Nice work!'
+    elif readings_match(expected,recognized):
+        summary='Same pronunciation, different characters.'
+    elif result.sound_alikes and not result.flags and not result.additions:
+        summary='These sound similar. Hanpi may have chosen the wrong spelling.'
+    else:
+        summary='Try the highlighted words. Speech recognition can also make mistakes.'
     html=(f'<section class="sentence-comparison" aria-live="polite"><h3>Target</h3><p lang="zh-CN">{text}</p>'
           f'<h3>You said</h3><p lang="zh-CN">{escape(recognized)}</p>'
           f'<p>{escape(summary)}</p>'+(f'<p>Extra transcript text: {escape(additions)}</p>' if additions else '')+

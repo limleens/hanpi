@@ -24,7 +24,7 @@ Libraries were integrated through their APIs. No runtime LLM generates pronuncia
 
 ## What feedback means
 
-**You said** contains actual ASR output. Its pinyin is the dictionary reading of that recognized spelling; it is not measured lexical-tone recognition. Word matches and experimental pitch matches are separate signals. **Words match!** allows the learner to continue, but is not a certificate of correct pronunciation.
+**You said** contains actual ASR output. Its pinyin is the dictionary reading of that recognized spelling; it is not measured lexical-tone recognition. Word matches and experimental pitch matches are separate signals. Full pinyin including tone is also compared: a homophone spelling such as 算 for 蒜 (both suàn) is accepted for isolated speaking practice. A different tone, extra syllable or different sound does not pass that reading comparison. Contextual sandhi and selected polyphonic readings are retained. This remains text-derived evidence, not acoustic phoneme detection. **Words match!** allows the learner to continue, but is not a certificate of correct pronunciation.
 
 Sentence differences highlight possible missing or changed text. ASR can mishear, including sound-alike spellings; the learner can inspect the aligned target/heard breakdown and practise a selected syllable. Hanpi does not provide full-sentence tone grades, consonant/phoneme diagnoses, arbitrary percentages or invented successful transcripts. Missing model/setup errors are logged rather than silently converted to success.
 
@@ -36,7 +36,7 @@ Lesson creation may send selected Chinese text to an online translation provider
 
 ## Evaluation
 
-- **105 automated tests passed** in Python 3.11/Linux, covering dictionary initialization, real packaged dictionary/OCR, offline lookup, translation fallback, audio handling, synthetic pitch contours, transcript comparison, saved data and auth guard behavior.
+- **122 automated tests passed** in Python 3.11/Linux, covering dictionary initialization, real packaged dictionary/OCR, offline lookup, translation fallback, audio handling, synthetic pitch contours, transcript comparison, saved data and auth guard behavior.
 - Actual local ASR transcribed public human Mandarin WAV files from the official model release. Browser tests exercised an isolated 对 crop, matching and mismatching sentences, heard-versus-target Spotlight, Continue and Back navigation. These were real model calls, not mocked transcripts.
 - Phone-width and desktop browser checks covered OCR, reading/pinyin, voice callbacks, practice stages, saved-data persistence, dark-mode contrast and authentication. Real authentication tests rejected incorrect passwords and retained a valid session after refresh; bundled fonts were verified to load.
 - Some provider responses and failure paths are mocked in unit tests; live external translation/TTS availability is not guaranteed. Browser speech callback tests verify wiring, not audible quality.

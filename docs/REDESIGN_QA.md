@@ -1,3 +1,12 @@
+# Homophone feedback correction · 12 November
+
+- Baseline: 105 tests. Updated suite: **122 passed**. Reproduced target 蒜 versus transcript 算 from the user's screenshot, with both readings suàn and falling pitch.
+- Full pinyin including tone is compared separately from character identity. Tests cover exact homophones, different tones, extra/missing syllables, sandhi, polyphonic reading overrides and actual saved-practice counts.
+- Matching homophone spelling plus matching isolated F0 counts as practice. Unclear/mismatched pitch remains unconfirmed; a matching transcript reading never fabricates a pitch result. The displayed transcript is preserved.
+- `node scripts/homophone_smoke.cjs`: real app startup and phone-width dark-OS UI, **ASR stubbed to 算** and actual Praat analysis of a synthetic falling contour. Verifies Sounds match, correct heard/target display, positive pitch feedback, Continue above the fixed nav, and completion. This is not real-user ASR/audio validation.
+- Sentence comparison keeps different characters visible but explains identical contextual pinyin positively. It does not claim semantic equality or a sentence pronunciation/tone grade.
+- Original human audio was not attached; real-device retest remains manual. Prior real-model validation is documented below.
+
 # Branded sign-in validation · 11 November
 
 - Baseline before this change: 104 tests passed. Updated full suite: **105 tests passed**.

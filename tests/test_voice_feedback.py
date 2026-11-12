@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 import app
-from hanpi_core.comparison import compare_transcript, comparison_view, transcript_breakdown
+from hanpi_core.comparison import compare_transcript, comparison_view, transcript_breakdown, readings_match
 
 
 def pitch(monkeypatch, tone):
@@ -100,3 +100,48 @@ def test_invalid_breakdown_has_no_invented_alignment():
 def test_word_breakdown_keeps_polyphonic_and_sandhi_context():
     assert '行 · háng' in transcript_breakdown('银行', '银行', 1)
     assert '你 · ní' in transcript_breakdown('你好', '你好', 0)
+
+
+@pytest.mark.parametrize('expected,heard,match',[
+    ('蒜','算',True),('蒜','算。',True),('香','乡',True),('蒜香烧肉','算乡烧肉',True),
+    ('你好','泥好',True),('银行','银航',True),('蒜','酸',False),('妈','马',False),
+    ('蒜','算算',False),('蒜','',False),('','算',False),('女','旅',False),
+])
+def test_reading_match_requires_same_syllables_and_tones(expected,heard,match):
+    assert readings_match(expected,heard) is match
+
+
+def test_user_suan_homophone_counts_as_success_with_matching_pitch(monkeypatch,tmp_path):
+    from hanpi_core.library import save_entry,get_entry
+    monkeypatch.setenv('HANPI_LIBRARY_PATH',str(tmp_path/'homophone.sqlite3'))
+    saved=save_entry('word','蒜','garlic')
+    pitch(monkeypatch,4)
+    monkeypatch.setattr(app,'_transcribe',lambda audio:('算',''))
+    feedback,_,transcript=app._assess_and_track(object(),'蒜','0',True,saved.id)
+    assert 'Sounds match!' in feedback and '**You said:** 算 · suàn' in feedback
+    assert '**Target:** 蒜 · suàn' in feedback and 'matches the target' in feedback
+    assert 'may have misheard' not in feedback and 'Start high, then drop' not in feedback
+    assert transcript=='算' and get_entry(saved.id).practice_count==1
+
+
+@pytest.mark.parametrize('detected',[1,None])
+def test_homophone_does_not_override_mismatched_or_unclear_pitch(monkeypatch,detected):
+    pitch(monkeypatch,detected)
+    monkeypatch.setattr(app,'_transcribe',lambda audio:('算',''))
+    feedback,_,_,matched=app._practice_result(object(),'蒜','0',True)
+    assert 'Sounds match!' in feedback and not matched
+    assert 'matches the target' not in feedback
+
+
+def test_homophone_uses_selected_polyphonic_reading(monkeypatch):
+    pitch(monkeypatch,2)
+    monkeypatch.setattr(app,'_transcribe',lambda audio:('航',''))
+    assert app._practice_result(object(),'行','0',True,reading='hang2')[3]
+    assert not app._practice_result(object(),'行','0',True,reading='xing2')[3]
+
+
+def test_sentence_homophone_is_positive_without_claiming_matching_text():
+    html,_=comparison_view('蒜香烧肉','算乡烧肉',include_matches=True)
+    assert 'Same pronunciation, different characters.' in html
+    assert not compare_transcript('蒜香烧肉','算乡烧肉').matches
+    assert 'Word check, not a tone score' in html

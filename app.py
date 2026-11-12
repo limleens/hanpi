@@ -15,7 +15,7 @@ from hanpi_core.ocr import recognize_image
 from hanpi_core.dictionary import dictionary_status
 from hanpi_core.translation import sentence_translation
 from hanpi_core.search import search_english, search_pinyin
-from hanpi_core.comparison import comparison_view, compare_transcript, transcript_breakdown
+from hanpi_core.comparison import comparison_view, compare_transcript, transcript_breakdown, readings_match
 from hanpi_core.asr import prepare_model, backend_name
 from hanpi_core.gloss import meaning_for, lookup_meaning, translate_online, translate_to_chinese
 from hanpi_core.library import save_entry, list_entries, get_entry, delete_entry, mark_practiced
@@ -158,9 +158,10 @@ def _practice_result(audio, text, selected_index, use_asr=False, reading=None):
     if use_asr:
         if transcript:
             result = compare_transcript(syllable.hanzi, transcript)
-            word_matched = result.matches
+            homophone = not result.matches and readings_match(syllable.hanzi,transcript,syllable.spoken_pinyin)
+            word_matched = result.matches or homophone
             heard_reading = ' '.join(s.written_pinyin for s in get_syllables(transcript))
-            heading = ('Words match!' if word_matched else
+            heading = ('Words match!' if result.matches else 'Sounds match!' if homophone else
                        'Similar syllable, different spelling. Hanpi may have misheard.' if result.sound_alikes and not result.flags and not result.additions else
                        'Let’s try that word again.')
             word_feedback = (f'### {heading}\n\n**You said:** {escape(transcript)} · {escape(heard_reading)}'
@@ -187,9 +188,11 @@ def _practice_result(audio, text, selected_index, use_asr=False, reading=None):
         heading = 'A steady attempt — third tones can stay low.'
     else:
         heading = 'Good try — let’s shape it together.'
-    measured = (f'**Tone shape:** {TONES[score.detected]}. **Target:** {TONES[expected]}.'
+    measured = (f'**Tone shape:** {TONES[expected]} — matches the target.' if matched else
+                f'**Tone shape:** {TONES[score.detected]}. **Target:** {TONES[expected]}.'
                 if score.detected else f'**Tone shape:** unclear. **Target:** {TONES[expected]}.')
-    feedback = (word_feedback + f'{measured}\n\n{heading} {PRACTICE_TIPS[expected]}\n\n'
+    tip = '' if matched else f' {PRACTICE_TIPS[expected]}'
+    feedback = (word_feedback + f'{measured}\n\n{heading}{tip}\n\n'
                 '*Practice guidance, not a pronunciation grade.*')
     if use_asr:
         matched = matched and word_matched

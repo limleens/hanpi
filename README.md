@@ -51,7 +51,7 @@ For later launches, just run the last command. To update an existing checkout on
 
 1. Choose **Type**, enter `我喜欢咖啡`, and tap **Learn this phrase**. You should see the characters, tone-coloured pinyin, and **“I like coffee.”**
 2. Tap a character to open **Spotlight**. Tap **Listen**, then **Try it** and say that syllable. Stopping the microphone checks the recording; uploaded WAV files use **Check my voice**.
-3. Read **You said** beside the target. Hanpi shows the actual recognized text and its pinyin, with separate measured pitch guidance. Matching words get **Words match!** and **Continue →**. You can retry or go back.
+3. Read **You said** beside the target. Hanpi shows the actual recognized text and its pinyin, with separate measured pitch guidance. Matching words get **Words match!** and **Continue →**. Homophones such as 蒜/算 (both suàn) get **Sounds match!**; a different recognized character alone does not fail speaking practice. You can retry or go back.
 4. Return to the phrase and choose **Try the whole phrase**. Listen, record, and compare the target with the transcript. Possible missing or changed words are highlighted. Tap a word for its target-versus-heard breakdown and practise it in Spotlight.
 5. Try **Scan** with a photo of Chinese text. Check the proposed OCR text, then tap **Use verified text**. Save a phrase or word with the star and reopen it under **Saved**.
 
@@ -102,7 +102,7 @@ Using the same virtual environment as above, on Windows:
 
 On macOS/Linux, replace `.\.venv\Scripts\python.exe` with `.venv/bin/python`.
 
-**Latest validation: 105 tests passed** on Python 3.11/Linux, plus server startup and browser walkthroughs at phone and desktop widths. Browser checks include actual local speech recognition of public human Mandarin recordings, matching/mismatching transcripts, Spotlight, OCR, saved data, and authenticated sign-in. The user also reported successful phone launch and OCR of their actual menu. Final phone microphone/playback accuracy has not been independently measured; this is not a native-speaker accuracy study. See [QA evidence](docs/REDESIGN_QA.md).
+**Latest validation: 122 tests passed** on Python 3.11/Linux, plus server startup and browser walkthroughs at phone and desktop widths. Browser checks include actual local speech recognition of public human Mandarin recordings, matching/mismatching transcripts, Spotlight, OCR, saved data, and authenticated sign-in. The user also reported successful phone launch and OCR of their actual menu. Final phone microphone/playback accuracy has not been independently measured; this is not a native-speaker accuracy study. See [QA evidence](docs/REDESIGN_QA.md).
 
 If dictionary or speech setup fails, run the diagnostic command above. Startup prints the Python executable and dictionary status. Reinstall dependencies and prepare the model with **that same interpreter**. The default model downloads from the official sherpa-onnx GitHub release and is checksum-checked. Optional Faster-Whisper setup is separate; it is not required for the submitted default path.
 

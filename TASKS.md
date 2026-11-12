@@ -126,3 +126,14 @@ See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and t
 - [x] Consolidate ai.md into an accurate account of development assistance, runtime models, real versus mocked validation and current limits.
 - [x] Provide a submission checklist and prepare a tracked-source ZIP without credentials, local saved data, recordings, model downloads or virtual environments.
 - [ ] Owner uploads the one-page write-up, demo/video and private reviewer access details to the challenge portal; PR #2 stays unmerged.
+
+
+## Homophone feedback correction · 12 November
+
+- [x] Reproduce the screenshot: 蒜 and ASR 算 both read suàn, but strict character equality prevented a successful attempt.
+- [x] Accept identical full pinyin including tone, retaining the actual transcript and separate acoustic pitch requirement for practice counts.
+- [x] Keep different tones, additional syllables and different sounds distinct; preserve contextual sandhi and selected dictionary readings.
+- [x] Shorten successful feedback and avoid corrective pitch instructions when the observed contour already matches.
+- [x] Sentence feedback explains same pronunciation/different characters without claiming text equality or measured sentence tones.
+- [x] 122 tests pass; phone browser reproduces the screenshot using a declared ASR stub and actual Praat processing of synthetic falling pitch.
+- [ ] Recheck on the user's real voice/phone; the screenshot did not include an audio file.
