@@ -32,7 +32,7 @@ Sentence differences highlight possible missing or changed text. ASR can mishear
 
 OCR, ASR and pitch analysis run on the host computer. In a phone demo, images/audio are uploaded over HTTPS to that host; they are not necessarily processed on the phone itself. Recordings are not sent to an LLM, translation provider or TTS provider. Gradio can cache uploaded media temporarily, and this prototype does not promise production-grade retention controls.
 
-Lesson creation may send selected Chinese text to an online translation provider; natural Listen sends selected text to the TTS service. Browser speech may use device/platform services. Gradio analytics are disabled. Saved vocabulary uses a host-local SQLite database shared by authenticated demo visitors, not independent user accounts. Credentials, local recordings, saved vocabulary and model downloads are excluded from the source archive.
+Lesson creation may send selected Chinese text to an online translation provider; natural Listen sends selected text to the TTS service. Browser speech may use device/platform services. Gradio analytics are disabled. Saved vocabulary uses a host-local SQLite database shared by authenticated demo visitors, not independent user accounts. Personal credentials, local recordings, saved vocabulary and model downloads are excluded from the source archive. The owner explicitly requested that the shared reviewer demo login be included in README; it is intentionally visible there.
 
 ## Evaluation
 

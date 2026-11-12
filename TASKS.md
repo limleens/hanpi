@@ -146,3 +146,10 @@ See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and t
 - [x] Show Syllable matches and an explicit ignored-ending note; keep sentence comparison and arbitrary extra-word rejection intact.
 - [x] 148 tests plus phone-browser checks for 算, 算了, 算儿 and 酸了, with real Praat processing of synthetic falling pitch and declared ASR stubs.
 - [ ] Validate the recognizer on the user's original recording; no audio file was attached. No model accuracy improvement or sentence tone grading is claimed.
+
+## Reviewer demo access · 12 November
+
+- [x] Add the owner-supplied live demo URL and explicitly authorized shared demo login near the top of README.
+- [x] Remove the assertion that the repository is private; access guidance now supports repository checkout or source ZIP.
+- [x] Align AI disclosure and submission checklist with intentionally published demo credentials.
+- [x] Validate README content and diff formatting. Live URL verification from the cloud was blocked by its proxy; repository visibility and application behavior were not changed.

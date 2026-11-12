@@ -8,6 +8,17 @@ Built for the **Hiya Voice AI Challenge · Real-Time Assistance** track, using P
 
 **Why voice?** Looking up a translation helps you understand a word. Hearing it and speaking it are different skills. A keyboard cannot capture a learner's spoken attempt: Hanpi uses audio to show what speech recognition heard and to offer experimental pitch coaching for individual syllables.
 
+## Live demo
+
+**[Open Hanpi on your phone or laptop](https://194438d21ac5106fd4.gradio.live)** — no installation needed.
+
+- **Username:** `hanpi-demo`
+- **Password:** `hanzipinyin`
+
+Sign in with this shared demo account and allow microphone/camera access when prompted. Start with **Type → 我喜欢咖啡 → Learn this phrase**, or scan a photo of Chinese text.
+
+This temporary demo is available while the host computer and app are running. If the link is unavailable, follow the local setup below. Restarting the hosted session can change its URL.
+
 ## Get the submission version
 
 The submission is on **`feat/mobile-first-redesign`**; `main` may contain an older version. PR #2 remains open for review.
@@ -17,7 +28,7 @@ git clone --branch feat/mobile-first-redesign --single-branch https://github.com
 cd hanpi
 ```
 
-If you received a ZIP, extract it and open a terminal in the folder containing `app.py` and `requirements.txt`; skip the clone commands. This is a private repository, so reviewers need repository access or the source ZIP.
+If you received a ZIP, extract it and open a terminal in the folder containing `app.py` and `requirements.txt`; skip the clone commands. Reviewers can use either the repository checkout or the source ZIP.
 
 ## Setup and run
 
@@ -63,7 +74,7 @@ The top search supports **Chinese → English**, **English → Chinese**, and **
 
 Phone camera and microphone access need **HTTPS**. Follow [phone setup](docs/PHONE_DEMO.md) to create a temporary, password-protected Gradio share link. The host computer and app must stay running.
 
-Visitors enter the `HANPI_DEMO_USER` and `HANPI_DEMO_PASSWORD` you configured; they do not register an account. Include those login details with private demo/submission instructions. The browser normally stays signed in after refreshing. Restarting a share session prints a new URL.
+The current reviewer login is listed under **Live demo** above; no account registration is needed. For your own deployment, configure `HANPI_DEMO_USER` and `HANPI_DEMO_PASSWORD`. The browser normally stays signed in after refreshing. Restarting a share session prints a new URL; update the demo link above if it changes.
 
 The sign-in page and app use the same bundled Fredoka and Plus Jakarta Sans fonts, rounded cards, and readable light palette, including on devices set to dark mode.
 
@@ -112,6 +123,6 @@ If online playback fails, choose **Browser voice** under Voice & speed. If the m
 
 OCR, speech recognition and pitch analysis run on the computer hosting Hanpi. Recordings are processed there, not sent to an LLM or the translation/TTS services. When accessed through a share link, phone recordings travel to that host over HTTPS. Gradio may temporarily cache uploaded media; this prototype does not implement a production retention policy.
 
-Creating a lesson may send selected Chinese text to Google Translate/MyMemory for translation. Listening with natural voice sends the selected text to the Edge speech service. Browser speech may use platform services. The app disables Gradio analytics. The source ZIP excludes the local database, recordings, credentials, virtual environment and downloaded speech model.
+Creating a lesson may send selected Chinese text to Google Translate/MyMemory for translation. Listening with natural voice sends the selected text to the Edge speech service. Browser speech may use platform services. The app disables Gradio analytics. The source ZIP excludes the local database, recordings, personal credentials, virtual environment and downloaded speech model. The shared reviewer demo login is intentionally provided in this README.
 
 See [ai.md](ai.md) for AI tools, models, development assistance and limitations. CC-CEDICT content is credited to its contributors/MDBG under **CC BY-SA 4.0** and installed through pycccedict. The default Mandarin model release is **Apache-2.0**; edge-tts is **LGPLv3**. Bundled brand fonts include their **SIL Open Font** licences in [hanpi_ui/fonts](hanpi_ui/fonts). Other libraries retain their upstream licences.
