@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-HANZI = re.compile(r"[\u3400-\u9fff]")
+HANZI = re.compile(r"[\u3400-\u9fff\uf900-\ufaff\U00020000-\U0002fa1f\U00030000-\U000323af]")
 # Storage safeguard, not a recognition limit.
 MAX_HANZI = 10000
 
@@ -39,10 +39,17 @@ def clean_hanzi(text: str, max_hanzi: int | None = None) -> str:
     result = "".join(HANZI.findall(text or ""))
     return result if max_hanzi is None else result[:max_hanzi]
 
-def get_syllables(text: str) -> list[Syllable]:
+def get_syllables(text: str, reading: str | None = None) -> list[Syllable]:
     hanzi = clean_hanzi(text)
     if not hanzi:
         return []
+    if reading and len(hanzi) == 1:
+        from pypinyin.contrib.tone_convert import to_tone, to_tone3
+        numbered = to_tone3(reading.lower(), neutral_tone_with_five=True)
+        if numbered[-1:] not in '12345' or ' ' in numbered:
+            raise ValueError('Choose a valid numbered dictionary reading.')
+        accented = to_tone(numbered)
+        return [Syllable(0, hanzi, accented, accented, int(numbered[-1]))]
     try:
         from pypinyin import Style, lazy_pinyin
     except ImportError:

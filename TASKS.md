@@ -34,7 +34,8 @@
 - [ ] Word-by-word speech playback highlighting.
 - [ ] More natural reference TTS with timed pronunciation tracking.
 - [ ] Tongue and mouth-shape visual diagrams for zh/ch/sh and retroflex sounds.
-- [ ] Dedicated iPhone experience and optional cloud sync for starred cards.
+- [x] Mobile-first Gradio web experience (hardware/iPhone field checks remain below).
+- [ ] Optional per-user cloud sync for starred cards.
 
 **Scope:** Hanpi can read longer Chinese text, but scoring is deliberately one syllable at a time. Do not claim verified full-sentence pronunciation grading or clinical accuracy.
 
@@ -48,3 +49,121 @@
 - [ ] Confirm the neural TTS service connects and returns human-sounding audio using a real Internet connection.
 - [ ] Test iPhone camera capture and microphone permissions over HTTPS.
 - [ ] Launch a permanent phone-accessible website using per-user saved vocabulary storage.
+
+
+## Hanpi v1 mobile-first redesign · 11 November 2026
+
+- [x] Cream/coral responsive shell, compact Hanpi wordmark/tagline, top search, Scan / Type / Speak / Saved bottom navigation.
+- [x] One shared Results surface for camera/upload OCR, typed/search text, optional ASR and reopened saved items.
+- [x] Editable OCR/text, aligned tone-coloured character/pinyin controls, honest dictionary provenance and key vocabulary.
+- [x] Spotlight selection with dimmed neighbours, sandhi-aware Listen, Try it, retry, Next and Back to phrase.
+- [x] Settings for Female/Male, 0.75×/1×/1.25× playback, browser fallback and optional Whisper; reduced-motion support.
+- [x] Experimental isolated-syllable feedback; pitch charts collapsed; no phoneme detection or whole-sentence tone score.
+- [x] Whole-phrase record/review/completion, SQLite word/character/phrase saving, reopening and removal.
+- [x] Baseline 32 tests before refactor; final 47 tests pass, including state, provider failure and practice-count regressions.
+- [x] CI-equivalent UI import/HTTP startup check and phone/desktop browser walkthrough; server-restart persistence checked with an isolated database.
+- [ ] Confirm live neural TTS and audible Mandarin browser playback on the user's device.
+- [ ] Test actual iPhone rear camera/mic over authenticated HTTPS and a real photo/voice recording.
+- [ ] Complete native-speaker feedback, submission write-up and a short demo before the authoritative portal deadline.
+
+See `docs/REDESIGN_QA.md` for exact automated results and browser evidence. The app remains a single-user, shared SQLite prototype; no permanent hosting or per-user cloud sync is claimed.
+
+
+## Release reliability pass · 11 November 2026
+
+- [x] Reproduced English-only search failure and the real upstream dictionary UnicodeDecodeError with CP1252 decoding; no silent initialization failure.
+- [x] Explicit Chinese → English / English → Chinese / Pinyin modes; offline reverse lookup, tone groups, numbered/accented input, pagination and selectable lessons.
+- [x] Real bundled CC-CEDICT loads as UTF-8; diagnostic command verifies app interpreter/packages and 我 / 喜欢 / 咖啡 segmentation. Limited fallback vocabulary is clearly labelled.
+- [x] Bounded OCR upscale/contrast/sharpen/red-channel variants with model-score ranking; preserve Traditional output and require editable confirmation before lesson creation.
+- [ ] Run OCR on the original user menu image: inline chat images are visible but no source file is exposed to Python. Generated 149×28 red Traditional and clean fixtures pass actual RapidOCR.
+- [x] Default local Mandarin ASR with an explicit, checksum-verified ~75 MB model download; no paid API or Hugging Face dependency for the default path.
+- [x] Whole-sentence expected/transcript comparison, possible word omissions/substitutions, editable transcript and highlighted-target Spotlight. No sentence tone/phoneme grading.
+- [x] Real public Mandarin recordings transcribed; browser integration checks matching and mismatching targets. Isolated-syllable F0 coach remains independent.
+- [x] Fresh Python 3.11 dependency install and non-UTF-8-locale dictionary check; full regression suite and both browser walkthroughs pass.
+- [x] Local authentication smoke test: unauthenticated config is HTTP 401, valid login succeeds. No secrets committed.
+- [ ] Actual Windows/iPhone hardware: authenticated HTTPS, rear camera, microphone, audible Mandarin speech. Follow the five-minute PHONE_DEMO check.
+- [ ] User review of PR #2; do not merge automatically.
+
+See docs/REDESIGN_QA.md for exact evidence and limitations. Bubbly styling and the existing navigation are preserved; this pass changes functionality, not visual design.
+
+
+## Final phone feedback pass · 11 November
+
+- [x] Reproduced the dark-OS/light-card mismatch; mirrored Gradio dark tokens and checked white audio cards/dark text in a dark-OS browser.
+- [x] Full sentence/menu translation shown directly, offline phrase cache plus bounded online providers with honest fallback labels.
+- [x] Inline voice options; removed visible Settings/model preparation/transcript-edit/pitch-debug controls.
+- [x] Separate Results / Spotlight / Record / sentence feedback stages, one-stage Back and automatic scroll-to-stage.
+- [x] More tolerant voiced-audio extraction, quieter/stereo recording regressions, gentle coaching, and cautious treatment of homophone ASR spellings without fake passes.
+- [x] 92 tests pass; dark-OS 390px browser checks menu translation, staged recording, real Mandarin ASR, Back navigation and removal of technical controls.
+- [ ] Recheck the updated build on the actual phone; the user confirmed phone launch and real-image OCR on the preceding build.
+
+
+## Final voice feedback pass · 11 November
+
+- [x] Enable actual local ASR for isolated-character practice; show the exact heard text, pinyin and target instead of pitch tips alone.
+- [x] Separate word matching from measured experimental tone shape; show both observed and target tone labels. Keep Continue available, without unsupported perfect-pronunciation claims.
+- [x] Check microphone recordings on stop; retain explicit check buttons for uploads/retries.
+- [x] Whole-phrase word match confirmation, highlighted differences, and selectable target/heard Spotlight breakdown for every target character.
+- [x] Back preserves sentence transcript feedback through word Spotlight and recording stages.
+- [x] Shorter learner copy; no new logo/mascot project or dependency download before submission.
+- [x] Real human single-word and sentence ASR exercised in a dark-OS phone-width browser; exact-match Continue, replacement breakdown and nested Back verified.
+- [ ] Recheck the final voice feedback with the user's physical phone microphone; arbitrary-word ASR accuracy and full-sentence tone grading remain unvalidated/unsupported.
+- [x] Final validation: 104 pytest cases; same-interpreter strict dictionary/ASR check; current server startup; real-recording phone browser and OCR/Saved/desktop walkthroughs.
+
+
+## Demo welcome screen · 11 November
+
+- [x] Match the protected sign-in page to Hanpi's cream/orange/navy cards and Fredoka/Plus Jakarta Sans typography.
+- [x] Bundle the brand fonts with their SIL Open Font licences; no external font request needed before login.
+- [x] Preserve configured username/password authentication and never expose credentials in landing HTML.
+- [x] Real authenticated browser checks at 320/390/1280px, light/dark appearance, wrong-password rejection, protected config, successful login and refresh persistence.
+- [x] Full Python suite: 105 tests passed; existing remote-auth guard remains tested.
+- [ ] Confirm final sign-in appearance on the physical phone; browser checks use desktop Chromium with phone-sized viewports.
+
+## Submission handoff · 11 November
+
+- [x] Rewrite README around a reviewer-friendly quick start, the actual submission branch, a short voice-led walkthrough, architecture, limits and privacy.
+- [x] Consolidate ai.md into an accurate account of development assistance, runtime models, real versus mocked validation and current limits.
+- [x] Provide a submission checklist and prepare a tracked-source ZIP without credentials, local saved data, recordings, model downloads or virtual environments.
+- [ ] Owner uploads the one-page write-up, demo/video and private reviewer access details to the challenge portal; PR #2 stays unmerged.
+
+
+## Homophone feedback correction · 12 November
+
+- [x] Reproduce the screenshot: 蒜 and ASR 算 both read suàn, but strict character equality prevented a successful attempt.
+- [x] Accept identical full pinyin including tone, retaining the actual transcript and separate acoustic pitch requirement for practice counts.
+- [x] Keep different tones, additional syllables and different sounds distinct; preserve contextual sandhi and selected dictionary readings.
+- [x] Shorten successful feedback and avoid corrective pitch instructions when the observed contour already matches.
+- [x] Sentence feedback explains same pronunciation/different characters without claiming text equality or measured sentence tones.
+- [x] 122 tests pass; phone browser reproduces the screenshot using a declared ASR stub and actual Praat processing of synthetic falling pitch.
+- [ ] Recheck on the user's real voice/phone; the screenshot did not include an audio file.
+
+
+## Forgiving isolated-syllable practice · 12 November
+
+- [x] Accept a matching base syllable followed by one short le/er or conversational ending, including 算了/算儿 for 蒜.
+- [x] Compare isolated syllable identity independently of ASR-selected lexical tone; keep acoustic pitch checking and the unmodified full transcript separate.
+- [x] Show Syllable matches and an explicit ignored-ending note; keep sentence comparison and arbitrary extra-word rejection intact.
+- [x] 148 tests plus phone-browser checks for 算, 算了, 算儿 and 酸了, with real Praat processing of synthetic falling pitch and declared ASR stubs.
+- [ ] Validate the recognizer on the user's original recording; no audio file was attached. No model accuracy improvement or sentence tone grading is claimed.
+
+## Reviewer demo access · 12 November
+
+- [x] Add the owner-supplied live demo URL and explicitly authorized shared demo login near the top of README.
+- [x] Remove the assertion that the repository is private; access guidance now supports repository checkout or source ZIP.
+- [x] Align AI disclosure and submission checklist with intentionally published demo credentials.
+- [x] Validate README content and diff formatting. Live URL verification from the cloud was blocked by its proxy; repository visibility and application behavior were not changed.
+
+
+## Overnight speech accuracy and guided tutor · 12 November
+
+- [x] Review SenseVoice/FunASR, Silero VAD, official sherpa-onnx examples and model terms; document sources and a focused baseline comparison.
+- [x] Bundle a checksum-verified MIT Silero detector; reject non-speech before decoding, preserve short/quiet speech, pad Mandarin initials/tails and retain internal pauses/repetitions.
+- [x] Add recommended local int8 SenseVoice (one-time ~163 MB download), pinned archive/file hashes, corruption repair and explicit/automatic profiles. Preserve original compact timing for compatibility.
+- [x] Stop reference/tutor playback when recording begins; block late playback/queued examples and disable duplicate check actions during capture/automatic analysis.
+- [x] Implement an original SVG tiger and evidence-led spoken dialogue: encouragement, concrete observed/target pitch tips, queued Mandarin examples, mute/replay and working Next/Try phrase actions.
+- [x] Keep original OCR/dictionary/TTS/SQLite/isolated F0 modules and Python/Gradio; no target priming, silent transcript deduplication, sentence-tone/phoneme grades or new paid API.
+- [x] 172 pytest cases; model/VAD diagnostic; phone/desktop OCR/ASR/Saved/Back walkthroughs; 320/390/1280px auth; actual ASR through Chromium fake-microphone capture using a public human WAV. Speech-output calls stubbed for ordering/mute tests.
+- [x] Focused development regression: old pipeline 11/14, filtered compact 11/14, raw SenseVoice 9/14, filtered SenseVoice 14/14. This is one human crop plus controlled perturbations, not a general accuracy study.
+- [ ] Re-test the user's original microphone/accent and audible iPhone speech/autoplay; no original recording was attached.
+- [ ] Host pulls changes, prepares the improved model, restarts and updates the live demo URL. PR #2 remains unmerged for user review.

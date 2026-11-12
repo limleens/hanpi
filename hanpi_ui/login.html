@@ -1,0 +1,88 @@
+<style>
+/* HANPI_FONTS */
+/* Gradio serves auth before the app's normal CSS. Scope this to sign-in. */
+html:has(#hanpi-welcome) { color-scheme: light !important; }
+body:has(#hanpi-welcome), gradio-app:has(#hanpi-welcome), .gradio-container:has(#hanpi-welcome) {
+  background: #fffaf0 !important; color: #17364c !important;
+}
+.gradio-container:has(#hanpi-welcome) {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif !important;
+  padding: 24px 18px !important; box-sizing: border-box; min-height: 100svh !important;
+}
+.gradio-container:has(#hanpi-welcome) .main { padding: 0 !important; }
+.gradio-container:has(#hanpi-welcome) .wrap.min-h-screen {
+  min-height: calc(100svh - 48px); display: flex; align-items: center; justify-content: center;
+  padding: 0 !important;
+}
+.gradio-container:has(#hanpi-welcome) .column.panel {
+  width: 100%; min-width: 0 !important; max-width: 420px; box-sizing: border-box;
+  padding: 30px 26px !important; gap: 20px;
+  background: #fff !important; border: 1.5px solid #e8dfd0 !important;
+  border-bottom: 6px solid #17364c !important; border-radius: 28px !important;
+  box-shadow: 0 12px 36px #17364c0a;
+}
+.gradio-container:has(#hanpi-welcome) .column.panel > h2 { display: none; }
+.gradio-container:has(#hanpi-welcome) .auth { margin: 0; padding: 0; }
+#hanpi-welcome, #hanpi-welcome span { box-sizing: border-box; }
+#hanpi-welcome { display: block; color: #17364c; text-align: left; }
+#hanpi-welcome .welcome-brand { display: flex; align-items: center; gap: 14px; margin: 0 0 28px; }
+#hanpi-welcome .welcome-mark {
+  display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px;
+  background: #ffc85f; border: 2.5px solid #17364c; border-radius: 17px;
+  box-shadow: 3px 4px 0 #17364c; transform: rotate(-7deg);
+  font: 700 27px/1 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+}
+#hanpi-welcome .welcome-mark span { transform: rotate(7deg); }
+#hanpi-welcome .welcome-wordmark {
+  display: block; font: 600 38px/1 'Fredoka', 'Trebuchet MS', ui-rounded, sans-serif; letter-spacing: -.065em;
+}
+#hanpi-welcome .welcome-dot { color: #ff950a; }
+#hanpi-welcome .welcome-tagline { display: block; margin-top: 5px; font-size: 11px; font-weight: 600; color: #557181; }
+#hanpi-welcome .welcome-title {
+  display: block; margin-bottom: 10px;
+  font: 600 29px/1.15 'Fredoka', 'Trebuchet MS', ui-rounded, sans-serif;
+}
+#hanpi-welcome .welcome-copy { display: block; font-size: 13px; line-height: 1.65; color: #557181; }
+.gradio-container:has(#hanpi-welcome) .form { border: 0 !important; background: #fff !important; gap: 16px; }
+.gradio-container:has(#hanpi-welcome) .form > .block {
+  border: 0 !important; padding: 0 !important; background: #fff !important; overflow: visible;
+}
+.gradio-container:has(#hanpi-welcome) label { display: flex; flex-direction: column; gap: 7px; padding: 0 !important; }
+.gradio-container:has(#hanpi-welcome) [data-testid=block-info] {
+  position: static !important; padding: 0 !important; margin: 0 !important; background: #fff !important;
+  color: #17364c !important; font: 600 13px/1.5 'Plus Jakarta Sans', 'Segoe UI', sans-serif; text-transform: capitalize;
+}
+.gradio-container:has(#hanpi-welcome) .input-container { border: 0 !important; box-shadow: none !important; }
+.gradio-container:has(#hanpi-welcome) input {
+  width: 100%; min-height: 52px; box-sizing: border-box; padding: 12px 14px !important;
+  background: #fffcf6 !important; color: #17364c !important; caret-color: #037f84;
+  border: 2px solid #e8dfd0 !important; border-radius: 14px !important;
+  font: 500 16px/1.4 'Plus Jakarta Sans', 'Segoe UI', sans-serif !important;
+}
+.gradio-container:has(#hanpi-welcome) input:focus {
+  outline: 3px solid #05a8aa33 !important; outline-offset: 2px; border-color: #037f84 !important;
+}
+.gradio-container:has(#hanpi-welcome) button.primary {
+  min-height: 54px; border: 0 !important; border-bottom: 5px solid #e67710 !important;
+  border-radius: 17px !important; background: #ff950a !important; color: #17364c !important;
+  font: 700 15px/1.4 'Plus Jakarta Sans', 'Segoe UI', sans-serif !important;
+}
+.gradio-container:has(#hanpi-welcome) button.primary:hover { background: #ffad35 !important; }
+.gradio-container:has(#hanpi-welcome) button.primary:focus-visible { outline: 3px solid #037f84; outline-offset: 4px; }
+.gradio-container:has(#hanpi-welcome) .creds {
+  margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff0ec; color: #a32d1f;
+  font-size: 13px; line-height: 1.5;
+}
+@media (max-width: 360px) {
+  .gradio-container:has(#hanpi-welcome) .column.panel { padding: 24px 20px !important; }
+  #hanpi-welcome .welcome-title { font-size: 27px; }
+}
+</style>
+<span id="hanpi-welcome">
+  <span class="welcome-brand">
+    <span class="welcome-mark" aria-hidden="true"><span>汉</span></span>
+    <span><span class="welcome-wordmark">hanpi<span class="welcome-dot">.</span></span><span class="welcome-tagline">snap, translate, learn!</span></span>
+  </span>
+  <span class="welcome-title" role="heading" aria-level="1">Let’s learn a little Chinese.</span>
+  <span class="welcome-copy">Use the demo login shared with you.</span>
+</span>

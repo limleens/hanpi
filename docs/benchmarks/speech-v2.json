@@ -1,0 +1,480 @@
+{
+  "scope": "14 focused cases from one public human word crop plus synthetic noises; not representative ASR accuracy",
+  "source_sha256": "668bf8df51a10027b84d5d8816a1ce11ae93545538dc05cfe2aa6811d399c250",
+  "source": "official sherpa-onnx Zipformer 14M test_wavs/0.wav, first 0.42 seconds",
+  "raw_transcripts_preserved": true,
+  "results": {
+    "compact-raw": {
+      "matched_cases": 11,
+      "total_cases": 14,
+      "cases": [
+        {
+          "case": "human-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.466,
+          "abstention": ""
+        },
+        {
+          "case": "quiet-human-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.025,
+          "abstention": ""
+        },
+        {
+          "case": "surrounding-silence",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.298,
+          "abstention": ""
+        },
+        {
+          "case": "tap-before-word",
+          "expected": "对",
+          "recognized": "对吧",
+          "reading_sequence_matches": false,
+          "seconds": 0.156,
+          "abstention": ""
+        },
+        {
+          "case": "tap-after-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.157,
+          "abstention": ""
+        },
+        {
+          "case": "breath-after-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.136,
+          "abstention": ""
+        },
+        {
+          "case": "word-with-hiss",
+          "expected": "对",
+          "recognized": "",
+          "reading_sequence_matches": false,
+          "seconds": 0.044,
+          "abstention": ""
+        },
+        {
+          "case": "two-real-attempts",
+          "expected": "对对",
+          "recognized": "对吧",
+          "reading_sequence_matches": false,
+          "seconds": 0.112,
+          "abstention": ""
+        },
+        {
+          "case": "silence",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.0,
+          "abstention": "ValueError"
+        },
+        {
+          "case": "hiss",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.103,
+          "abstention": ""
+        },
+        {
+          "case": "tap",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.077,
+          "abstention": ""
+        },
+        {
+          "case": "breath-like-noise",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.034,
+          "abstention": ""
+        },
+        {
+          "case": "electronic-tone",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.083,
+          "abstention": ""
+        },
+        {
+          "case": "dc-offset",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.09,
+          "abstention": ""
+        }
+      ]
+    },
+    "compact-speech-filtered": {
+      "matched_cases": 11,
+      "total_cases": 14,
+      "cases": [
+        {
+          "case": "human-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.16,
+          "abstention": ""
+        },
+        {
+          "case": "quiet-human-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.142,
+          "abstention": ""
+        },
+        {
+          "case": "surrounding-silence",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.331,
+          "abstention": ""
+        },
+        {
+          "case": "tap-before-word",
+          "expected": "对",
+          "recognized": "对吧",
+          "reading_sequence_matches": false,
+          "seconds": 0.224,
+          "abstention": ""
+        },
+        {
+          "case": "tap-after-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.203,
+          "abstention": ""
+        },
+        {
+          "case": "breath-after-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.179,
+          "abstention": ""
+        },
+        {
+          "case": "word-with-hiss",
+          "expected": "对",
+          "recognized": "",
+          "reading_sequence_matches": false,
+          "seconds": 0.075,
+          "abstention": "ValueError"
+        },
+        {
+          "case": "two-real-attempts",
+          "expected": "对对",
+          "recognized": "对吧",
+          "reading_sequence_matches": false,
+          "seconds": 0.202,
+          "abstention": ""
+        },
+        {
+          "case": "silence",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.0,
+          "abstention": "ValueError"
+        },
+        {
+          "case": "hiss",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.053,
+          "abstention": "NoSpeechError"
+        },
+        {
+          "case": "tap",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.048,
+          "abstention": "NoSpeechError"
+        },
+        {
+          "case": "breath-like-noise",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.075,
+          "abstention": "NoSpeechError"
+        },
+        {
+          "case": "electronic-tone",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.001,
+          "abstention": "NoSpeechError"
+        },
+        {
+          "case": "dc-offset",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.0,
+          "abstention": "NoSpeechError"
+        }
+      ]
+    },
+    "accurate-raw": {
+      "matched_cases": 9,
+      "total_cases": 14,
+      "cases": [
+        {
+          "case": "human-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.076,
+          "abstention": ""
+        },
+        {
+          "case": "quiet-human-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.098,
+          "abstention": ""
+        },
+        {
+          "case": "surrounding-silence",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.523,
+          "abstention": ""
+        },
+        {
+          "case": "tap-before-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.322,
+          "abstention": ""
+        },
+        {
+          "case": "tap-after-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.237,
+          "abstention": ""
+        },
+        {
+          "case": "breath-after-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.222,
+          "abstention": ""
+        },
+        {
+          "case": "word-with-hiss",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.102,
+          "abstention": ""
+        },
+        {
+          "case": "two-real-attempts",
+          "expected": "对对",
+          "recognized": "对对",
+          "reading_sequence_matches": true,
+          "seconds": 0.178,
+          "abstention": ""
+        },
+        {
+          "case": "silence",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.0,
+          "abstention": "ValueError"
+        },
+        {
+          "case": "hiss",
+          "expected": "",
+          "recognized": "我",
+          "reading_sequence_matches": false,
+          "seconds": 0.248,
+          "abstention": ""
+        },
+        {
+          "case": "tap",
+          "expected": "",
+          "recognized": "我",
+          "reading_sequence_matches": false,
+          "seconds": 0.191,
+          "abstention": ""
+        },
+        {
+          "case": "breath-like-noise",
+          "expected": "",
+          "recognized": "没",
+          "reading_sequence_matches": false,
+          "seconds": 0.106,
+          "abstention": ""
+        },
+        {
+          "case": "electronic-tone",
+          "expected": "",
+          "recognized": "我",
+          "reading_sequence_matches": false,
+          "seconds": 0.267,
+          "abstention": ""
+        },
+        {
+          "case": "dc-offset",
+          "expected": "",
+          "recognized": "我",
+          "reading_sequence_matches": false,
+          "seconds": 0.244,
+          "abstention": ""
+        }
+      ]
+    },
+    "accurate-speech-filtered": {
+      "matched_cases": 14,
+      "total_cases": 14,
+      "cases": [
+        {
+          "case": "human-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.174,
+          "abstention": ""
+        },
+        {
+          "case": "quiet-human-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.164,
+          "abstention": ""
+        },
+        {
+          "case": "surrounding-silence",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.254,
+          "abstention": ""
+        },
+        {
+          "case": "tap-before-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.259,
+          "abstention": ""
+        },
+        {
+          "case": "tap-after-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.205,
+          "abstention": ""
+        },
+        {
+          "case": "breath-after-word",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.201,
+          "abstention": ""
+        },
+        {
+          "case": "word-with-hiss",
+          "expected": "对",
+          "recognized": "对",
+          "reading_sequence_matches": true,
+          "seconds": 0.189,
+          "abstention": ""
+        },
+        {
+          "case": "two-real-attempts",
+          "expected": "对对",
+          "recognized": "对对",
+          "reading_sequence_matches": true,
+          "seconds": 0.296,
+          "abstention": ""
+        },
+        {
+          "case": "silence",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.0,
+          "abstention": "ValueError"
+        },
+        {
+          "case": "hiss",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.103,
+          "abstention": "NoSpeechError"
+        },
+        {
+          "case": "tap",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.057,
+          "abstention": "NoSpeechError"
+        },
+        {
+          "case": "breath-like-noise",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.07,
+          "abstention": "NoSpeechError"
+        },
+        {
+          "case": "electronic-tone",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.001,
+          "abstention": "NoSpeechError"
+        },
+        {
+          "case": "dc-offset",
+          "expected": "",
+          "recognized": "",
+          "reading_sequence_matches": true,
+          "seconds": 0.0,
+          "abstention": "NoSpeechError"
+        }
+      ]
+    }
+  }
+}

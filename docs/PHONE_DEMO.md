@@ -21,8 +21,8 @@ The running Gradio server should print a temporary **https://...gradio.live** UR
 - Open the HTTPS link in iPhone Safari.
 - Sign in, then use the **Camera** source on the photo card to take a picture of Hanzi. Alternatively choose Upload to select a photo from your library.
 - Allow camera/microphone permissions in Safari when prompted.
-- Tap **Find Hanzi in photo**; review and correct the detected text.
-- Play a browser voice or choose the optional online natural voice, record an isolated syllable, and review the experimental pitch feedback.
+- Tap **Recognize characters**, verify/edit the proposed Chinese text, and tap **Use verified text** to open Results.
+- Tap a character/pinyin to open Spotlight, then **Listen** and **Try it**. Record an isolated syllable and tap **Check my tone**. Inline Voice & speed selects Female/Male natural voice, speed, or browser speech; network failure falls back to browser speech where available.
 
 **Important:** Browser camera/microphone access requires a secure HTTPS origin outside localhost. Browser/speech behavior may vary across iOS versions.
 
@@ -30,7 +30,7 @@ The running Gradio server should print a temporary **https://...gradio.live** UR
 
 Your phone captures the image and voice in the browser, but the Python OCR and tone-analysis models run on the **Windows computer hosting the app**. Your computer and its Internet connection must remain available. This is not a standalone iPhone app.
 
-The optional natural Mandarin voices use Edge's online neural TTS service through the `edge-tts` package (LGPLv3, see upstream license). Chinese text goes to that third-party provider only when the user taps a natural voice button. The existing browser voice buttons remain available as a fallback.
+The optional natural Mandarin voices use Edge's online neural TTS service through the `edge-tts` package (LGPLv3, see upstream license). Chinese text goes to that third-party provider only when the user taps Listen with natural voice selected. The browser voice preference in Settings and automatic browser fallback remain available.
 
 ## 3. Security and saved vocabulary
 
@@ -54,3 +54,58 @@ For an eventual permanent hosted Gradio app, a [Hugging Face Space](https://hugg
 - [ ] Natural voice selector generates and plays audio when connected.
 - [ ] Star a word, restart Windows app, and verify the entry remains saved.
 - [ ] No public exposure of shared vocabulary or passwords.
+
+
+## Five-minute release check on your real iPhone
+
+Prepare dependencies/model on the computer before this check:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/check_environment.py --strict
+.\.venv\Scripts\python.exe scripts/prepare_asr.py
+.\.venv\Scripts\python.exe scripts/check_environment.py --strict --asr
+$env:HANPI_SHARE = "1"
+$env:HANPI_DEMO_USER = "hanpi-demo"
+$privatePassword = Read-Host "Private demo password (at least 10 characters)" -AsSecureString
+$env:HANPI_DEMO_PASSWORD = [System.Net.NetworkCredential]::new("", $privatePassword).Password
+.\.venv\Scripts\python.exe app.py
+```
+
+The share link is temporary and depends on Gradio's external tunnel service. Keep the computer running; do not post the password or link publicly. The password prompt above avoids putting its value into shell history.
+
+1. Open the printed HTTPS share link in Safari; confirm login is required and sign in.
+2. Select **English → Chinese**, search `eat`, choose 吃. Select **Pinyin lookup**, search `ma3`, then `mǎ`; verify the third-tone choices.
+3. Scan your actual menu using the rear-camera control, allow permission, and verify/edit the proposed characters **before** pressing Use verified text. Try the original narrow red crop too.
+4. Type 我喜欢咖啡. Tap Listen, then Try the whole phrase; record once correctly and once with a different word. Review recording, inspect “What we heard”, and tap a flagged target character. Text differences can be ASR mistakes; they are not measured tone errors. For isolated tone coaching, record only the selected syllable.
+5. Test playback, save/reopen a phrase, and navigate all four tabs without sideways scrolling. If neural TTS is unavailable, choose Browser voice under Voice & speed and check whether the device has a Mandarin voice.
+
+This checklist is **not marked passed** by the automated desktop runs. Real camera/mic permissions, audible playback and Safari behavior require your phone. Avoid personal vocabulary in a shared demo; everyone authenticated to that instance uses the same host-local SQLite library.
+
+
+After pulling the final phone fix, stop the old process with Ctrl+C and run app.py again in the same PowerShell window. Use the **new** printed HTTPS link. Sharing/login environment variables and the prepared speech model remain available. The learning flow now separates Results, Spotlight, recording and feedback; the top Back button moves one stage back. Your phone’s browser chrome may remain dark; the app’s cards and text use a consistent light palette.
+
+
+## Demo sign-in
+
+Visitors enter the same `HANPI_DEMO_USER` and `HANPI_DEMO_PASSWORD` you set on the hosting computer. They do not create an account. Give challenge reviewers these details with the private submission/demo instructions. The browser normally stays signed in after refreshing; a new browser or private window needs the login again. The landing page never displays or embeds the credentials.
+
+Sign-in uses Hanpi's cream/navy/orange card styling, Fredoka headings and Plus Jakarta Sans controls. Both fonts are bundled, including before login, so Google Fonts access is unnecessary. Authentication and the shared-library behavior are unchanged.
+
+
+## Update to improved speech recognition and Hǔ
+
+Use the same PowerShell window so your existing share/login environment variables remain set. Stop the old server with Ctrl+C, then:
+
+```powershell
+git pull --ff-only origin feat/mobile-first-redesign
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe scripts/prepare_asr.py
+.\.venv\Scripts\python.exe scripts/check_environment.py --strict --asr
+.\.venv\Scripts\python.exe app.py
+```
+
+Preparation downloads the recommended SenseVoice model once (about 163 MB). The small speech detector is bundled. The diagnostic should report `profile: accurate` and `speech_detection: true`. Existing compact models still work; to explicitly use one, set `$env:HANPI_ASR_PROFILE = "compact"` before launching. Do not use that setting when testing the improved profile.
+
+Open the **new** HTTPS link and update README's Live demo URL if the share address changes. The live laptop process does not update itself when the GitHub branch changes.
+
+In practice, Hǔ gives spoken guidance after your actions and offers Continue or Try phrase. Spoken tips mutes automatic narration; Hear tip replays it and may be needed when iOS blocks automatic playback. Corrective examples use browser Mandarin speech; the Listen buttons retain natural online reference voices. Recording pauses app playback to reduce self-echo. Test actual microphone permission, voice clarity and audible examples on your phone.

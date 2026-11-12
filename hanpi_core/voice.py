@@ -40,8 +40,8 @@ def prepare_text(text: str) -> str:
 
 def _rate(rate: float) -> str:
     speed = float(rate)
-    if not 0.65 <= speed <= 1.20:
-        raise ValueError("Voice speed must be between 0.65x and 1.20x.")
+    if not 0.65 <= speed <= 1.25:
+        raise ValueError("Voice speed must be between 0.65x and 1.25x.")
     return f"{round((speed - 1.0) * 100):+d}%"
 
 
@@ -76,7 +76,8 @@ async def synthesize_neural(text: str, voice: str = DEFAULT_VOICE, rate: float =
         if path.stat().st_size < 100:
             raise RuntimeError("Voice provider returned no usable audio.")
         return str(path)
-    except (OSError, RuntimeError, asyncio.TimeoutError, ConnectionError) as exc:
+    except Exception as exc:
+        # Provider protocol and HTTP/WebSocket failures also need the browser fallback.
         path.unlink(missing_ok=True)
         raise RuntimeError(
             "Natural voice is temporarily unavailable. "

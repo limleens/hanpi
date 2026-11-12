@@ -54,3 +54,18 @@ def test_remote_phone_mode_requires_auth(monkeypatch):
     monkeypatch.delenv("HANPI_DEMO_PASSWORD", raising=False)
     with pytest.raises(RuntimeError, match="HANPI_DEMO_USER"):
         app.launch_app()
+
+
+def test_branded_login_keeps_configured_authentication(monkeypatch):
+    import app
+    import secrets
+    from types import SimpleNamespace
+    password=secrets.token_urlsafe(20)
+    monkeypatch.setenv('HANPI_SHARE','1')
+    monkeypatch.setenv('HANPI_DEMO_USER','qa-demo')
+    monkeypatch.setenv('HANPI_DEMO_PASSWORD',password)
+    monkeypatch.setattr(app,'build_app',lambda:SimpleNamespace(launch=lambda **kwargs:kwargs))
+    settings=app.launch_app()
+    assert settings['auth']==('qa-demo',password)
+    assert 'hanpi-welcome' in settings['auth_message']
+    assert password not in settings['auth_message']

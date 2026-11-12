@@ -1,2 +1,3 @@
+# Optional alternative Whisper backend; default Mandarin ASR uses sherpa-onnx.
 -r requirements.txt
 faster-whisper>=1.1,<2.0

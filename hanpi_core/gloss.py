@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from .text import clean_hanzi
+from .dictionary import get_dictionary, dictionary_status
+from .starter import BY_WORD
 
 GLOSSES = {
     "你好": "Hello", "你": "You", "好": "Good; well",
@@ -26,19 +28,15 @@ class Meaning:
 
 @lru_cache(maxsize=1)
 def _cedict():
-    try:
-        from pycccedict.cccedict import CcCedict
-        return CcCedict()
-    except (ImportError, OSError, ValueError):
-        return None
+    return get_dictionary()
 
 @lru_cache(maxsize=4096)
 def _entry(word: str):
     dictionary = _cedict()
     if dictionary is None:
-        return None
+        return BY_WORD.get(word)
     try:
-        return dictionary.get_entry(word)
+        return dictionary.get_entry(word) or BY_WORD.get(word)
     except (KeyError, ValueError, TypeError):
         return None
 
@@ -61,11 +59,9 @@ def lookup_meaning(text: str) -> Meaning:
         return Meaning("", "none", False, "Enter Chinese text to see its meaning.")
     direct = _exact(hanzi)
     if direct:
-        origin = "curated" if hanzi in GLOSSES else "CC-CEDICT"
+        origin = "curated" if hanzi in GLOSSES else ("CC-CEDICT" if _cedict() is not None else "starter dictionary (limited)")
         return Meaning(direct, origin, True, "Dictionary meaning; verify readings in context.")
-    if _cedict() is None:
-        return Meaning("", "unavailable", False,
-                       "Install the requirements to enable the offline CC-CEDICT dictionary.")
+    limited = _cedict() is None
     parts, unknown = [], []
     pos = 0
     while pos < len(hanzi):
@@ -87,7 +83,9 @@ def lookup_meaning(text: str) -> Meaning:
     note = "Approximate word-by-word dictionary gloss, not a fluent sentence translation."
     if unknown:
         note += " Unknown characters: " + "".join(unknown[:40]) + ("…" if len(unknown) > 40 else "")
-    return Meaning(" · ".join(parts), "CC-CEDICT segmented gloss", False, note)
+    if limited:
+        note += " " + dictionary_status().message
+    return Meaning(" · ".join(parts), "starter dictionary (limited)" if limited else "CC-CEDICT segmented gloss", False, note)
 
 def meaning_for(text: str) -> str:
     return lookup_meaning(text).text
@@ -109,4 +107,38 @@ def translate_online(text: str) -> str:
         raise RuntimeError("Online translation failed. Check your connection or type the meaning manually.") from exc
     if not translated or not str(translated).strip():
         raise RuntimeError("No translation was returned.")
+    return str(translated).strip()
+
+
+def key_vocabulary(text: str, limit: int = 6) -> list[tuple[str, str]]:
+    """A few distinct dictionary words; this never truncates the actual passage."""
+    hanzi = clean_hanzi(text)
+    words, seen, pos = [], set(), 0
+    while pos < len(hanzi) and len(words) < limit:
+        for size in range(min(16, len(hanzi) - pos), 0, -1):
+            word = hanzi[pos:pos + size]
+            meaning = _exact(word)
+            if meaning:
+                if word not in seen:
+                    words.append((word, meaning))
+                    seen.add(word)
+                pos += size
+                break
+        else:
+            pos += 1
+    return words
+
+
+def translate_to_chinese(text: str) -> str:
+    """Explicit opt-in English search; never called while typing or on page load."""
+    query = (text or '').strip()
+    if not query or len(query) > 2500:
+        raise ValueError('Enter an English word or phrase under 2,500 characters.')
+    try:
+        from deep_translator import GoogleTranslator
+        translated = GoogleTranslator(source='en', target='zh-CN').translate(query)
+    except Exception as exc:
+        raise RuntimeError('Online translation is unavailable. Try Chinese text or Scan instead.') from exc
+    if not clean_hanzi(translated):
+        raise RuntimeError('No Chinese translation was returned. Try Chinese text or Scan instead.')
     return str(translated).strip()
